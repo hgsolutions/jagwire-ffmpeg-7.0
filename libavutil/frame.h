@@ -224,6 +224,20 @@ enum AVFrameSideDataType {
      * encoding.
      */
     AV_FRAME_DATA_VIDEO_HINT,
+
+    /* Jagwire */
+    /**
+     * MISB standard 0604 microsecond timestamp applied to both Motion Imagery 
+     * and metadata to provide a means for correlating the events of both data 
+     * types in time.
+     */
+    AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP,
+    /**
+     * Custom microsecond timestamp used for synchronizing frames from a 
+     * transcoded source back to the original source.
+     */
+    AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP,
+    /* Jagwire - End */
 };
 
 enum AVActiveFormatDescription {

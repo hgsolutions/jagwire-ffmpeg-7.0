@@ -660,6 +660,32 @@ static int h264_parse(AVCodecParserContext *s,
     return next;
 }
 
+/* Jagwire - Add microsecond timestamp to AVPacket side data */
+static void h264_transfer_side_data(AVCodecParserContext *s, AVPacket *avpkt)
+{
+  H264ParseContext *p = s->priv_data;
+
+  if (!strncmp(p->sei.unregistered.misp_precision_timestamp, "MISPmicrosectime", 16)) {
+      uint8_t *sd = av_packet_new_side_data(avpkt,
+          AV_PKT_DATA_MISP_PRECISION_TIMESTAMP, 28);
+      if (sd) {
+        memcpy(sd, p->sei.unregistered.misp_precision_timestamp, 28);
+      }
+      memset(p->sei.unregistered.misp_precision_timestamp, 0, 28);
+  }
+
+  /* Add SYNC microsecond timestamp to frame side data */
+  if (!strncmp(p->sei.unregistered.sync_precision_timestamp, "SYNCmicrosectime", 16)) {
+      uint8_t *sd = av_packet_new_side_data(avpkt,
+          AV_PKT_DATA_SYNC_PRECISION_TIMESTAMP, 28);
+      if (sd) {
+        memcpy(sd, p->sei.unregistered.sync_precision_timestamp, 28);
+      }
+      memset(p->sei.unregistered.sync_precision_timestamp, 0, 28);
+  }
+}
+/* Jagwire - End */
+
 static void h264_close(AVCodecParserContext *s)
 {
     H264ParseContext *p = s->priv_data;
@@ -687,4 +713,5 @@ const AVCodecParser ff_h264_parser = {
     .parser_init    = init,
     .parser_parse   = h264_parse,
     .parser_close   = h264_close,
+    .transfer_side_data = h264_transfer_side_data,
 };

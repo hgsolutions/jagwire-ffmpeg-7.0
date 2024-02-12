@@ -36,7 +36,9 @@
 #include "libavutil/thread.h"
 #include "libavutil/timecode.h"
 #include "libavutil/stereo3d.h"
-
+/* Jagwire */
+#include "internal.h"
+/* Jagwire - End */
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "mathops.h"
@@ -471,6 +473,11 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s)
 {
     MPEG12EncContext *const mpeg12 = (MPEG12EncContext*)s;
     AVFrameSideData *side_data;
+    /* Jagwire */
+    uint8_t *sei_data;
+    size_t sei_size;
+    int ret;
+    /* Jagwire - End */
     mpeg1_encode_sequence_header(s);
 
     /* MPEG-1 picture header */
@@ -622,6 +629,24 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s)
             }
         }
     }
+
+    /* Jagwire - Precision timestamp */
+    ret = ff_alloc_misp_precision_timestamp_sei(s->current_picture_ptr->f, (void **) &sei_data, &sei_size);
+    if (ret < 0) {
+      av_log(s, AV_LOG_ERROR, "Not enough memory for MISP precision time stamp, skipping\n");
+    } else if (sei_data) {
+        put_header(s, USER_START_CODE);
+        ff_copy_bits(&s->pb, sei_data, sei_size * 8);
+    }
+    
+    ret = ff_alloc_sync_precision_timestamp_sei(s->current_picture_ptr->f, (void **) &sei_data, &sei_size);
+    if (ret < 0) {
+      av_log(s, AV_LOG_ERROR, "Not enough memory for SYNC precision time stamp, skipping\n");
+    } else if (sei_data) {
+        put_header(s, USER_START_CODE);
+        ff_copy_bits(&s->pb, sei_data, sei_size * 8);
+    }
+    /* Jagwire - End */
 
     s->mb_y = 0;
     ff_mpeg1_encode_slice_header(s);

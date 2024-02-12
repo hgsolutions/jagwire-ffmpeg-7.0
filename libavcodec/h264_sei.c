@@ -228,6 +228,48 @@ static int decode_green_metadata(H264SEIGreenMetaData *h, GetByteContext *gb)
     return 0;
 }
 
+/* Jagwire */
+static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *gb,
+                                         void *logctx, int size)
+{
+    uint8_t *user_data;
+    int e, build, i;
+
+    if (size < 16 || size >= INT_MAX - 16)
+        return AVERROR_INVALIDDATA;
+
+    user_data = av_malloc(16 + size + 1);
+    if (!user_data)
+        return AVERROR(ENOMEM);
+
+    skip_bits(gb, 8);
+    skip_bits(gb, 8);
+
+    for (i = 0; i < size + 16; i++)
+        user_data[i] = get_bits(gb, 8);
+
+    user_data[i] = 0;
+
+    /* Jagwire - Added support for precision time stamp decode */
+    if (!strncmp(user_data, "MISPmicrosectime", 16)) {
+        memcpy(h->misp_precision_timestamp, user_data, 28);
+    }
+    else if (!strncmp(user_data, "SYNCmicrosectime", 16)) {
+        memcpy(h->sync_precision_timestamp, user_data, 28);
+    } /* Jagwire - End */
+    else {
+        e = sscanf(user_data + 16, "x264 - core %d", &build);
+        if (e == 1 && build > 0)
+            h->x264_build = build;
+        if (e == 1 && build == 1 && !strncmp(user_data+16, "x264 - core 0000", 16))
+            h->x264_build = 67;
+    }
+
+    av_free(user_data);
+    return 0;
+}
+/* Jagwire - End */
+
 int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
                        const H264ParamSets *ps, void *logctx)
 {
@@ -281,6 +323,11 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
         case SEI_TYPE_GREEN_METADATA:
             ret = decode_green_metadata(&h->green_metadata, &gbyte_payload);
             break;
+        /* Jagwire */
+        case SEI_TYPE_USER_DATA_UNREGISTERED:
+            ret = decode_unregistered_user_data(&h->unregistered, gb, logctx, size);
+            break;
+        /* Jagwire - End */
         default:
             ret = ff_h2645_sei_message_decode(&h->common, type, AV_CODEC_ID_H264,
                                               &gb_payload, &gbyte_payload, logctx);

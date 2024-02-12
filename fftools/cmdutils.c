@@ -950,6 +950,12 @@ int filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
         prefix  = 's';
         flags  |= AV_OPT_FLAG_SUBTITLE_PARAM;
         break;
+    /* Jagwire */
+    case AVMEDIA_TYPE_DATA:
+        prefix  = 'd';
+        flags  |= AV_OPT_FLAG_DATA_PARAM;
+        break;
+    /* Jagwire - End */
     }
 
     while (t = av_dict_iterate(opts, t)) {

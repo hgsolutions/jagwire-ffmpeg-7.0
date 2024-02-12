@@ -289,6 +289,14 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     case AV_PKT_DATA_WEBVTT_SETTINGS:            return "WebVTT Settings";
     case AV_PKT_DATA_METADATA_UPDATE:            return "Metadata Update";
     case AV_PKT_DATA_MPEGTS_STREAM_ID:           return "MPEGTS Stream ID";
+    /* Jagwire */
+    case AV_PKT_DATA_MPEGTS_SMPTE_KLV_SYNC:      return "Synchronous SMPTE KLV";
+    case AV_PKT_DATA_MPEGTS_SMPTE_KLV_AUHEADER:  return "SMPTE KLV Access Unit Header";
+    case AV_PKT_DATA_MPEGTS_METADATA_DESC:       return "Metadata Descriptor";
+    case AV_PKT_DATA_MPEGTS_METADATA_STD_DESC:   return "Metadata STD Descriptor";
+    case AV_PKT_DATA_MISP_PRECISION_TIMESTAMP:   return "MISP Precision Timestamp";
+    case AV_PKT_DATA_SYNC_PRECISION_TIMESTAMP:   return "SYNC Precision Timestamp";
+    /* Jagwire - End */
     case AV_PKT_DATA_MASTERING_DISPLAY_METADATA: return "Mastering display metadata";
     case AV_PKT_DATA_CONTENT_LIGHT_LEVEL:        return "Content light level metadata";
     case AV_PKT_DATA_SPHERICAL:                  return "Spherical Mapping";

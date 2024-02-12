@@ -229,6 +229,11 @@ static av_always_inline void mc_dir_part(const H264Context *h, H264SliceContext 
     const int pic_height = 16 * h->mb_height >> MB_FIELD(sl);
     int ysh;
 
+    /* Jagwire */
+    if( pic->data[0] == NULL )
+        return;
+    /* Jagwire - End */
+
     if (mx & 7)
         extra_width -= 3;
     if (my & 7)

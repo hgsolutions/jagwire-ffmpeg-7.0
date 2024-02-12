@@ -181,6 +181,11 @@ struct MpegTSContext {
 
     AVStream *epg_stream;
     AVBufferPool* pools[32];
+
+    /* Jagwire */
+    int64_t last_video_pts;
+    int64_t last_video_dts;
+    /* Jagwire - End */
 };
 
 #define MPEGTS_OPTIONS \
@@ -270,6 +275,10 @@ typedef struct PESContext {
     AVBufferRef *buffer;
     SLConfigDescr sl;
     int merged_st;
+    /* Jagwire */
+    uint8_t klv_au_header[5];
+    int klv_au_header_present;
+    /* Jagwire - End */
 } PESContext;
 
 extern const AVInputFormat ff_mpegts_demuxer;
@@ -1046,6 +1055,15 @@ static int new_pes_packet(PESContext *pes, AVPacket *pkt)
         return AVERROR(ENOMEM);
     *sd = pes->stream_id;
 
+    /* Jagwire */
+    if (pes->klv_au_header_present) {
+        uint8_t *au_header = av_packet_new_side_data(pkt,
+            AV_PKT_DATA_MPEGTS_SMPTE_KLV_AUHEADER, 5);
+        memcpy(au_header, pes->klv_au_header, 5);
+        pes->klv_au_header_present = 0;
+    }
+    /* Jagwire - End */
+
     return 0;
 }
 
@@ -1306,8 +1324,11 @@ skip:
                     p += sl_header_bytes;
                     buf_size -= sl_header_bytes;
                 }
-                if (pes->st->codecpar->codec_id == AV_CODEC_ID_SMPTE_KLV && buf_size >= 5) {
-                    /* skip metadata access unit header */
+                if (pes->stream_type == STREAM_TYPE_METADATA && buf_size >= 5) {
+                    /* Jagwire - Store metadata access unit header */
+                    memcpy(pes->klv_au_header, p, 5);
+                    pes->klv_au_header_present = 1;
+                    /* Jagwire - End */
                     pes->pes_header_size += 5;
                     p += 5;
                     buf_size -= 5;
@@ -2033,8 +2054,34 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             st->codecpar->codec_tag = bytestream_get_le32(pp);
             if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
                 mpegts_find_stream_type(st, st->codecpar->codec_tag, METADATA_types);
+            /* Jagwire */
+            if (st->codecpar->codec_id == AV_CODEC_ID_SMPTE_KLV) {
+                AVPacketSideData *sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
+                                            &st->codecpar->nb_coded_side_data,
+                                            AV_PKT_DATA_MPEGTS_METADATA_DESC, desc_len, 0);
+                memcpy(sd->data, *pp - 7, desc_len);
+
+                if (stream_type == STREAM_TYPE_METADATA) {
+                    AVPacketSideData *sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
+                                            &st->codecpar->nb_coded_side_data, AV_PKT_DATA_MPEGTS_SMPTE_KLV_SYNC, 1, 0);
+                    sd->data[0] = 1;
+
+                    st->codecpar->profile = AV_PROFILE_KLVA_SYNC;
+                }
+            }
+            /* Jagwire - End */
         }
         break;
+    /* Jagwire */
+    case METADATA_STD_DESCRIPTOR:
+        if (st->codecpar->codec_id == AV_CODEC_ID_SMPTE_KLV) {
+            AVPacketSideData *sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
+                                        &st->codecpar->nb_coded_side_data,
+                                        AV_PKT_DATA_MPEGTS_METADATA_STD_DESC, desc_len, 0);
+            memcpy(sd->data, *pp, desc_len);
+        }
+        break;
+    /* Jagwire - End */
     case 0x7f: /* DVB extension descriptor */
         ext_desc_tag = get8(pp, desc_end);
         if (ext_desc_tag < 0)
@@ -3119,6 +3166,11 @@ static int mpegts_read_header(AVFormatContext *s)
     }
     ts->stream     = s;
     ts->auto_guess = 0;
+
+    /* Jagwire */
+    ts->last_video_dts = AV_NOPTS_VALUE;
+    ts->last_video_pts = AV_NOPTS_VALUE;
+    /* Jagwire - End */
 
     if (s->iformat == &ff_mpegts_demuxer) {
         /* normal demux */

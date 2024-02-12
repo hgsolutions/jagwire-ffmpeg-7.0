@@ -340,7 +340,7 @@ static int read_key(void)
 
 static int decode_interrupt_cb(void *ctx)
 {
-    return received_nb_signals > atomic_load(&transcode_init_done);
+    return received_nb_signals;/* Jagwire > atomic_load(&transcode_init_done); */
 }
 
 const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };

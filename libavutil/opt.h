@@ -283,6 +283,9 @@ typedef struct AVOption {
 #define AV_OPT_FLAG_AUDIO_PARAM     8
 #define AV_OPT_FLAG_VIDEO_PARAM     16
 #define AV_OPT_FLAG_SUBTITLE_PARAM  32
+/* Jagwire */
+#define AV_OPT_FLAG_DATA_PARAM      64
+/* Jagwire - End */
 /**
  * The option is intended for exporting values to the caller.
  */

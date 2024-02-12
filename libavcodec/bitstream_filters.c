@@ -43,6 +43,10 @@ extern const FFBitStreamFilter ff_hapqa_extract_bsf;
 extern const FFBitStreamFilter ff_hevc_metadata_bsf;
 extern const FFBitStreamFilter ff_hevc_mp4toannexb_bsf;
 extern const FFBitStreamFilter ff_imx_dump_header_bsf;
+/* Jagwire */
+extern const FFBitStreamFilter ff_klv_0601tomms_bsf;
+extern const FFBitStreamFilter ff_klv_0601removekeys_bsf;
+/* Jagwire - End */
 extern const FFBitStreamFilter ff_media100_to_mjpegb_bsf;
 extern const FFBitStreamFilter ff_mjpeg2jpeg_bsf;
 extern const FFBitStreamFilter ff_mjpega_dump_header_bsf;

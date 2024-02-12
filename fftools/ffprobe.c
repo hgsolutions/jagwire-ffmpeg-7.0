@@ -195,6 +195,10 @@ typedef enum {
     SECTION_ID_PIXEL_FORMAT_COMPONENT,
     SECTION_ID_PIXEL_FORMAT_COMPONENTS,
     SECTION_ID_PIXEL_FORMATS,
+    /* Jagwire */
+    SECTION_ID_PROGRAM_SIDE_DATA_LIST,
+    SECTION_ID_PROGRAM_SIDE_DATA,
+    /* Jagwire - End */
     SECTION_ID_PROGRAM_STREAM_DISPOSITION,
     SECTION_ID_PROGRAM_STREAM_TAGS,
     SECTION_ID_PROGRAM,
@@ -275,6 +279,10 @@ static struct section sections[] = {
     [SECTION_ID_PIXEL_FORMAT_FLAGS] = { SECTION_ID_PIXEL_FORMAT_FLAGS, "flags", 0, { -1 }, .unique_name = "pixel_format_flags" },
     [SECTION_ID_PIXEL_FORMAT_COMPONENTS] = { SECTION_ID_PIXEL_FORMAT_COMPONENTS, "components", SECTION_FLAG_IS_ARRAY, {SECTION_ID_PIXEL_FORMAT_COMPONENT, -1 }, .unique_name = "pixel_format_components" },
     [SECTION_ID_PIXEL_FORMAT_COMPONENT]  = { SECTION_ID_PIXEL_FORMAT_COMPONENT, "component", 0, { -1 } },
+    /* Jagwire */
+    [SECTION_ID_PROGRAM_SIDE_DATA_LIST] = { SECTION_ID_PROGRAM_SIDE_DATA_LIST, "side_data_list", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PROGRAM_SIDE_DATA, -1 }, .unique_name = "program_side_data_list" },
+    [SECTION_ID_PROGRAM_SIDE_DATA] =  { SECTION_ID_PROGRAM_SIDE_DATA, "side_data", 0, {-1}, .unique_name = "program_side_data"},
+    /* Jagwire - End */    
     [SECTION_ID_PROGRAM_STREAM_DISPOSITION] = { SECTION_ID_PROGRAM_STREAM_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "program_stream_disposition" },
     [SECTION_ID_PROGRAM_STREAM_TAGS] =        { SECTION_ID_PROGRAM_STREAM_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "program_stream_tags" },
     [SECTION_ID_PROGRAM] =                    { SECTION_ID_PROGRAM, "program", 0, { SECTION_ID_PROGRAM_TAGS, SECTION_ID_PROGRAM_STREAMS, -1 } },

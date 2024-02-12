@@ -96,6 +96,15 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     if (ref)
         av_log(s->avctx, AV_LOG_DEBUG,
                "Interlaced error concealment is not fully implemented\n");
+
+    /* Jagwire - 8 Oct 2011 */
+    /* Jagwire - 2017-05-22 copy from ffmpeg-0.8 */
+    /* Jagwire - 23 Jan 2024 - copy from ffmpeg-4.2.2 */
+    if( ((s->mv_dir & MV_DIR_FORWARD) && s->last_picture_ptr == NULL)
+        || ((s->mv_dir & MV_DIR_BACKWARD) && s->next_picture_ptr == NULL) )
+        return;
+    /* Jagwire - End */
+
     ff_mpv_reconstruct_mb(s, s->block);
 }
 

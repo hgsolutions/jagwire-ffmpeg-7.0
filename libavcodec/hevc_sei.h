@@ -78,12 +78,26 @@ typedef struct HEVCSEITimeCode {
     int32_t  time_offset_value[3];
 } HEVCSEITimeCode;
 
+/* Jagwire */
+typedef struct HEVCSEIPrecisionTimestamp {
+    uint8_t misp_precision_timestamp[28];
+    uint8_t sync_precision_timestamp[28];
+} HEVCSEIPrecisionTimestamp;
+
+typedef struct HEVCSEIUserDataUnregistered {
+    HEVCSEIPrecisionTimestamp precision_timestamp;
+} HEVCSEIUserDataUnregistered;
+/* Jagwire - End */
+
 typedef struct HEVCSEI {
     H2645SEI common;
     HEVCSEIPictureHash picture_hash;
     HEVCSEIPictureTiming picture_timing;
     int active_seq_parameter_set_id;
     HEVCSEITimeCode timecode;
+    /* Jagwire */
+    HEVCSEIUserDataUnregistered user_data_unregistered;
+    /* Jagwire - End */
 } HEVCSEI;
 
 struct HEVCParamSets;
@@ -106,6 +120,13 @@ static inline int ff_hevc_sei_ctx_replace(HEVCSEI *dst, const HEVCSEI *src)
 static inline void ff_hevc_reset_sei(HEVCSEI *sei)
 {
     ff_h2645_sei_reset(&sei->common);
+
+    /* Jagwire */
+    memset(sei->user_data_unregistered.precision_timestamp.misp_precision_timestamp,
+        0, 28);
+    memset(sei->user_data_unregistered.precision_timestamp.sync_precision_timestamp,
+        0, 28);
+    /* Jagwire - End */
 }
 
 #endif /* AVCODEC_HEVC_SEI_H */

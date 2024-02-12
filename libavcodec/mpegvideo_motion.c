@@ -89,7 +89,7 @@ void mpeg_motion_internal(MpegEncContext *s,
 {
     const uint8_t *ptr_y, *ptr_cb, *ptr_cr;
     int dxy, uvdxy, mx, my, src_x, src_y,
-        uvsrc_x, uvsrc_y, v_edge_pos, block_y_half;
+        uvsrc_x, uvsrc_y, v_edge_pos, block_y_half, check_height;
     ptrdiff_t uvlinesize, linesize;
 
     v_edge_pos = s->v_edge_pos >> field_based;
@@ -199,9 +199,31 @@ void mpeg_motion_internal(MpegEncContext *s,
         ptr_cr += s->uvlinesize;
     }
 
+    /* Jagwire - 10 Feb 2012
+     * Jagwire - 2017-05-22 copy from ffmpeg-0.8
+     * Return if Y ref picture is null or src_y is
+     * larger than it should be for configured video height
+     */
+    /* Jagwire - 23 Jan 2024 - copy from ffmpeg-4.2.2 */
+    check_height = s->height%16 ? s->height+(16-s->height%16) : s->height;
+    if (ref_picture[0] == NULL || src_y > (check_height-(16*(1+s->current_picture.field_picture)))>>s->current_picture.field_picture) {
+        return;
+    }
+    /* Jagwire - End */
+
     pix_op[0][dxy](dest_y, ptr_y, linesize, h);
 
     if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
+        /* Jagwire - 10 Feb 2012
+         * Jagwire - 2017-05-22 copy from ffmpeg-0.8
+         * Return if chroma ref pictures are null
+         */
+        /* Jagwire - 23 Jan 2024 - copy from ffmpeg-4.2.2 */
+        if ( ref_picture[1] == NULL || ref_picture[2] == NULL ) {
+            return;
+        }
+        /* Jagwire - End */
+
         pix_op[s->chroma_x_shift][uvdxy]
             (dest_cb, ptr_cb, uvlinesize, h >> s->chroma_y_shift);
         pix_op[s->chroma_x_shift][uvdxy]

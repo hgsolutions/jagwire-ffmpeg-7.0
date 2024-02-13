@@ -2731,7 +2731,6 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
 
         if (!tmp)
         {
-            av_free(a53_data);
             res = AVERROR(ENOMEM);
             goto error;
         }
@@ -2755,7 +2754,6 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
 
         if (!tmp)
         {
-            av_free(a53_data);
             res = AVERROR(ENOMEM);
             goto error;
         }

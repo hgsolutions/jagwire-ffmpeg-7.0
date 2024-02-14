@@ -31,6 +31,9 @@
 #include "avcodec.h"
 #include "cbs.h"
 #include "cbs_h264.h"
+/* Jagwire */
+#include "cbs_sei.h"
+/* Jagwire - End */
 #include "codec_internal.h"
 #include "h264.h"
 #include "h264_levels.h"

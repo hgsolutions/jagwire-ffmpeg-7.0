@@ -279,25 +279,31 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
             AVFrameSideData *sd = av_frame_get_side_data(pic->input_image,
                 AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP);
 
-            memcpy(priv->sei_misp_timestamp.data, sd->data + 16, 12);
+            if(sd) {
+                memcpy(priv->sei_misp_timestamp.uuid_iso_iec_11578, sd->data, 16);
+                memcpy(priv->sei_misp_timestamp.data, sd->data, 28);
 
-            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
-                                         SEI_TYPE_USER_DATA_UNREGISTERED,
-                                         &priv->sei_misp_timestamp, NULL);
-            if (err < 0)
-                goto fail;
+                err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                            SEI_TYPE_USER_DATA_UNREGISTERED,
+                                            &priv->sei_misp_timestamp, NULL);
+                if (err < 0)
+                    goto fail;
+            }
         }
         if (priv->sei_needed & SEI_SYNC_TIMESTAMP) {
             AVFrameSideData *sd = av_frame_get_side_data(pic->input_image,
                 AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP);
 
-            memcpy(priv->sei_sync_timestamp.data, sd->data + 16, 12);
+            if(sd) {
+                memcpy(priv->sei_sync_timestamp.uuid_iso_iec_11578, sd->data, 16);
+                memcpy(priv->sei_sync_timestamp.data, sd->data, 28);
 
-            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
-                                         SEI_TYPE_USER_DATA_UNREGISTERED,
-                                         &priv->sei_sync_timestamp, NULL);
-            if (err < 0)
-                goto fail;
+                err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                            SEI_TYPE_USER_DATA_UNREGISTERED,
+                                            &priv->sei_sync_timestamp, NULL);
+                if (err < 0)
+                    goto fail;
+            }
         }
         /* Jagwire - End */
 
@@ -668,6 +674,9 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     VAAPIEncodeH264Picture         *hprev = prev ? prev->priv_data : NULL;
     VAEncPictureParameterBufferH264 *vpic = pic->codec_picture_params;
     int i, j = 0;
+    /* Jagwire */
+    AVFrameSideData *sd = NULL;
+    /* Jagwire - End */
 
     if (pic->type == PICTURE_TYPE_IDR) {
         av_assert0(pic->display_order == pic->encode_order);
@@ -762,7 +771,7 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     }
 
     /* Jagwire */
-    AVFrameSideData *sd = av_frame_get_side_data(pic->input_image,
+    sd = av_frame_get_side_data(pic->input_image,
         AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP);
     if (sd) {
       priv->sei_needed |= SEI_MISP_TIMESTAMP;

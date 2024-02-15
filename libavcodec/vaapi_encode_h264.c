@@ -31,9 +31,6 @@
 #include "avcodec.h"
 #include "cbs.h"
 #include "cbs_h264.h"
-/* Jagwire */
-#include "cbs_sei.h"
-/* Jagwire - End */
 #include "codec_internal.h"
 #include "h264.h"
 #include "h264_levels.h"
@@ -113,9 +110,9 @@ typedef struct VAAPIEncodeH264Context {
     void                          *sei_a53cc_data;
 
     /* Jagwire */
-    H264RawSEIUserDataUnregistered sei_misp_timestamp;
+    SEIRawUserDataUnregistered     sei_misp_timestamp;
     uint8_t                       *sei_misp_timestamp_data;
-    H264RawSEIUserDataUnregistered sei_sync_timestamp;
+    SEIRawUserDataUnregistered     sei_sync_timestamp;
     uint8_t                       *sei_sync_timestamp_data;
     /* Jagwire - End */
 
@@ -284,9 +281,11 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
 
             memcpy(priv->sei_misp_timestamp.data, sd->data + 16, 12);
 
-            sei->payload[i].payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED;
-            sei->payload[i].payload.user_data_unregistered = priv->sei_misp_timestamp;
-            ++i;
+            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                         SEI_TYPE_USER_DATA_UNREGISTERED,
+                                         &priv->sei_misp_timestamp, NULL);
+            if (err < 0)
+                goto fail;
         }
         if (priv->sei_needed & SEI_SYNC_TIMESTAMP) {
             AVFrameSideData *sd = av_frame_get_side_data(pic->input_image,
@@ -294,9 +293,11 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
 
             memcpy(priv->sei_sync_timestamp.data, sd->data + 16, 12);
 
-            sei->payload[i].payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED;
-            sei->payload[i].payload.user_data_unregistered = priv->sei_sync_timestamp;
-            ++i;
+            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                         SEI_TYPE_USER_DATA_UNREGISTERED,
+                                         &priv->sei_sync_timestamp, NULL);
+            if (err < 0)
+                goto fail;
         }
         /* Jagwire - End */
 
@@ -761,7 +762,7 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     }
 
     /* Jagwire */
-    sd = av_frame_get_side_data(pic->input_image,
+    AVFrameSideData *sd = av_frame_get_side_data(pic->input_image,
         AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP);
     if (sd) {
       priv->sei_needed |= SEI_MISP_TIMESTAMP;

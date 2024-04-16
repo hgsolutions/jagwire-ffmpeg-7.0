@@ -2673,10 +2673,8 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
     int i, res;
 
     /* Jagwire */
-    NV_ENC_SEI_PAYLOAD *sei_payload = NULL;
     void *misp_sei_data = NULL;
     void *sync_sei_data = NULL;
-    void *a53_sei_data = NULL;
     size_t sei_size;
     /* Jagwire - End */
 
@@ -2736,6 +2734,7 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
         }
         else
         {
+            ctx->sei_data = tmp;
             ctx->sei_data[sei_count].payloadType = SEI_TYPE_USER_DATA_UNREGISTERED;
             ctx->sei_data[sei_count].payload = (uint8_t *)misp_sei_data;
             ctx->sei_data[sei_count].payloadSize = (uint32_t)sei_size;
@@ -2759,6 +2758,7 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
         }
         else
         {
+            ctx->sei_data = tmp;
             ctx->sei_data[sei_count].payloadType = SEI_TYPE_USER_DATA_UNREGISTERED;
             ctx->sei_data[sei_count].payload = (uint8_t *)sync_sei_data;
             ctx->sei_data[sei_count].payloadSize = (uint32_t)sei_size;

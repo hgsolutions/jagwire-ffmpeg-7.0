@@ -664,9 +664,10 @@ static int h264_parse(AVCodecParserContext *s,
 static void h264_transfer_side_data(AVCodecParserContext *s, AVPacket *avpkt)
 {
   H264ParseContext *p = s->priv_data;
+  uint8_t *sd = NULL;
 
   if (!strncmp(p->sei.unregistered.misp_precision_timestamp, "MISPmicrosectime", 16)) {
-      uint8_t *sd = av_packet_new_side_data(avpkt,
+      sd = av_packet_new_side_data(avpkt,
           AV_PKT_DATA_MISP_PRECISION_TIMESTAMP, 28);
       if (sd) {
         memcpy(sd, p->sei.unregistered.misp_precision_timestamp, 28);

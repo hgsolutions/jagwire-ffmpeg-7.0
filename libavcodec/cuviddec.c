@@ -414,10 +414,7 @@ static int CUDAAPI cuvid_handle_picture_display(void *opaque, CUVIDPARSERDISPINF
 /* Jagwire */
 static void cuvid_parse_frame_side_data(AVCodecContext *avctx, AVFrame *frame, AVPacket *avpkt)
 {
-  CuvidContext *ctx = avctx->priv_data;
-  int i;
-
-  for (i = 0; i < avpkt->side_data_elems; i++) {
+  for (int i = 0; i < avpkt->side_data_elems; i++) {
     AVFrameSideData *sd = NULL;
 
     if (avpkt->side_data[i].type == AV_PKT_DATA_MISP_PRECISION_TIMESTAMP) {
@@ -536,7 +533,7 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
         if (ret < 0 && ret != AVERROR_EOF)
             return ret;
         /* Jagwire */
-        cuvid_parse_frame_side_data(avctx, frame, &pkt);
+        cuvid_parse_frame_side_data(avctx, frame, pkt);
         /* Jagwire - End */
         ret = cuvid_decode_packet(avctx, pkt);
         av_packet_unref(pkt);

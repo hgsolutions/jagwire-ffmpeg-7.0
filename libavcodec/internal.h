@@ -180,6 +180,36 @@ int avpriv_codec_get_cap_skip_frame_fill_param(const AVCodec *codec);
 int ff_alloc_timecode_sei(const AVFrame *frame, AVRational rate, size_t prefix_len,
                      void **data, size_t *sei_size);
 
+/* Jagwire */
+/**
+ * Check AVFrame for MISP precision time stamp data and allocate and fill
+ * unregistered SEI message with precision time stamp.
+ * 
+ * @param frame    Raw frame to get MISB 0604 precision time stamp data from
+ * @param data     Pointer to a variable to store allocated memory
+ *                 Upon return the variable will hold NULL on error or if frame has no MISB 0604 precision time stamp.
+ *                 Otherwise it will point to *sei_size SEI message
+ * @param sei_size Pointer to a variable to store generated SEI message length
+ * @return         Zero on success, negative error code on failure
+ */
+int ff_alloc_misp_precision_timestamp_sei(const AVFrame *frame, void **data, 
+                                     size_t *sei_size);
+
+/**
+ * Check AVFrame for SYNC precision time stamp data and allocate and fill
+ * unregistered SEI message with precision time stamp.
+ * 
+ * @param frame    Raw frame to get custom SYNC precision time stamp data from
+ * @param data     Pointer to a variable to store allocated memory
+ *                 Upon return the variable will hold NULL on error or if frame has no SYNC precision time stamp.
+ *                 Otherwise it will point to *sei_size SEI message
+ * @param sei_size Pointer to a variable to store generated SEI message length
+ * @return         Zero on success, negative error code on failure
+ */
+int ff_alloc_sync_precision_timestamp_sei(const AVFrame *frame, void **data, 
+                                     size_t *sei_size);
+/* Jagwire - End */
+
 /**
  * Get an estimated video bitrate based on frame size, frame rate and coded
  * bits per pixel.

@@ -116,12 +116,23 @@ typedef struct H264SEIGreenMetaData {
     uint16_t xsd_metric_value;
 } H264SEIGreenMetaData;
 
+/* Jagwire */
+typedef struct H264SEIUnregistered {
+    int x264_build;
+    uint8_t misp_precision_timestamp[28];
+    uint8_t sync_precision_timestamp[28];
+} H264SEIUnregistered;
+/* Jagwire - End */
+
 typedef struct H264SEIContext {
     H2645SEI common;
     H264SEIPictureTiming picture_timing;
     H264SEIRecoveryPoint recovery_point;
     H264SEIBufferingPeriod buffering_period;
     H264SEIGreenMetaData green_metadata;
+    /* Jagwire */
+    H264SEIUnregistered unregistered;
+    /* Jagwire - End */
 } H264SEIContext;
 
 struct H264ParamSets;

@@ -40,6 +40,9 @@
 #include "libavutil/timecode.h"
 
 #include "libavcodec/avcodec.h"
+/* Jagwire */
+#include "libavcodec/bytestream.h"
+/* Jagwire - End */
 
 #include "avformat.h"
 #include "internal.h"
@@ -431,6 +434,30 @@ static void dump_s12m_timecode(void *ctx, const AVStream *st, const AVPacketSide
     }
 }
 
+/* Jagwire */
+static void dump_metadata_desc(void *ctx, const AVPacketSideData* sd) {
+    const uint8_t* desc_data = sd->data;
+    
+    av_log(ctx, AV_LOG_INFO, "Metadata Descriptor");
+    if (bytestream_get_be16(&desc_data) == 0xFFFF)
+        desc_data += 4;
+    if (bytestream_get_byte(&desc_data) == 0xFF) {
+        unsigned int format_id = bytestream_get_le32(&desc_data);
+        char tag_buf[32];
+        av_fourcc_make_string(tag_buf, format_id);
+        av_log(ctx, AV_LOG_INFO, ": %s", tag_buf);
+    }
+}
+
+static void dump_metadata_std_desc(void *ctx, const AVPacketSideData* sd) {
+    av_log(ctx, AV_LOG_INFO, "Metadata STD Descriptor");
+}
+
+static void dump_smpte_klv_sync(void *ctx, const AVPacketSideData* sd) {
+    av_log(ctx, AV_LOG_INFO, "Synchronous SMPTE KLV");
+}
+/* Jagwire - End */
+
 static void dump_sidedata(void *ctx, const AVStream *st, const char *indent,
                           int log_level)
 {
@@ -484,6 +511,17 @@ static void dump_sidedata(void *ctx, const AVStream *st, const char *indent,
         case AV_PKT_DATA_MASTERING_DISPLAY_METADATA:
             dump_mastering_display_metadata(ctx, sd, log_level);
             break;
+        /* Jagwire */
+        case AV_PKT_DATA_MPEGTS_METADATA_DESC:
+            dump_metadata_desc(ctx, sd);
+            break;
+        case AV_PKT_DATA_MPEGTS_METADATA_STD_DESC:
+            dump_metadata_std_desc(ctx, sd);
+            break;
+        case AV_PKT_DATA_MPEGTS_SMPTE_KLV_SYNC:
+            dump_smpte_klv_sync(ctx, sd);
+            break;
+        /* Jagwire - End */
         case AV_PKT_DATA_SPHERICAL:
             av_log(ctx, log_level, "spherical: ");
             dump_spherical(ctx, st->codecpar, sd, log_level);

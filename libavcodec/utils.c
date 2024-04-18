@@ -1059,6 +1059,58 @@ int ff_alloc_timecode_sei(const AVFrame *frame, AVRational rate, size_t prefix_l
     return 0;
 }
 
+/* Jagwire */
+int ff_alloc_misp_precision_timestamp_sei(const AVFrame *frame, void **data, 
+                                     size_t *sei_size)
+{
+    AVFrameSideData *side_data = NULL;
+    uint8_t *sei_data;
+
+    if (frame)
+        side_data = av_frame_get_side_data(frame,
+            AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP);
+    
+    if (!side_data) {
+        *data = NULL;
+        return 0;
+    }
+
+    *sei_size = side_data->size;
+    *data = av_mallocz(*sei_size);
+    if (!*data)
+        return AVERROR(ENOMEM);
+    sei_data = *data;
+    memcpy(sei_data, side_data->data, side_data->size);
+
+    return 0;
+}
+
+int ff_alloc_sync_precision_timestamp_sei(const AVFrame *frame, void **data, 
+                                     size_t *sei_size)
+{
+    AVFrameSideData *side_data = NULL;
+    uint8_t *sei_data;
+
+    if (frame)
+        side_data = av_frame_get_side_data(frame,
+            AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP);
+    
+    if (!side_data) {
+        *data = NULL;
+        return 0;
+    }
+
+    *sei_size = side_data->size;
+    *data = av_mallocz(*sei_size);
+    if (!*data)
+        return AVERROR(ENOMEM);
+    sei_data = *data;
+    memcpy(sei_data, side_data->data, side_data->size);
+
+    return 0;
+}
+/* Jagwire - End */
+
 int64_t ff_guess_coded_bitrate(AVCodecContext *avctx)
 {
     AVRational framerate = avctx->framerate;

@@ -305,6 +305,10 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->poc.prev_frame_num    = -1;
     h->sei.common.frame_packing.arrangement_cancel_flag = -1;
     h->sei.common.unregistered.x264_build = -1;
+    /* Jagwire */
+    memset(h->sei.unregistered.misp_precision_timestamp, 0, 28);
+    memset(h->sei.unregistered.sync_precision_timestamp, 0, 28);
+    /* Jagwire - End */
 
     h->next_outputed_poc = INT_MIN;
     for (i = 0; i < FF_ARRAY_ELEMS(h->last_pocs); i++)

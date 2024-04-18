@@ -26,6 +26,9 @@
 #include "golomb.h"
 #include "hevc_ps.h"
 #include "hevc_sei.h"
+/* Jagwire */
+#include "libavutil/mem.h"
+/* Jagwire - End */
 
 static int decode_nal_sei_decoded_picture_hash(HEVCSEIPictureHash *s,
                                                GetByteContext *gb)
@@ -150,6 +153,35 @@ static int decode_nal_sei_timecode(HEVCSEITimeCode *s, GetBitContext *gb)
     return 0;
 }
 
+/* Jagwire */
+static int decode_nal_sei_user_data_unregistered(HEVCSEIUserDataUnregistered *s,
+                                                 GetBitContext *gb, void *logctx)
+{
+    int i;
+    uint8_t *user_data;
+
+    user_data = av_malloc(29);
+    if (!user_data)
+        return AVERROR(ENOMEM);
+
+    for (i = 0; i < 28; i++)
+        user_data[i] = get_bits(gb, 8);
+
+    user_data[i] = 0;
+
+    if (!strncmp(user_data, "MISPmicrosectime", 16)) {
+        memcpy(s->precision_timestamp.misp_precision_timestamp, user_data, 28);
+    }
+    else if (!strncmp(user_data, "SYNCmicrosectime", 16)) {
+        memcpy(s->precision_timestamp.sync_precision_timestamp, user_data, 28);
+    }
+
+    av_free(user_data);
+    return 0;
+
+}
+/* Jagwire - End */
+
 static int decode_nal_sei_prefix(GetBitContext *gb, GetByteContext *gbyte,
                                  void *logctx, HEVCSEI *s,
                                  const HEVCParamSets *ps, int type)
@@ -163,6 +195,11 @@ static int decode_nal_sei_prefix(GetBitContext *gb, GetByteContext *gbyte,
         return decode_nal_sei_active_parameter_sets(s, gb, logctx);
     case SEI_TYPE_TIME_CODE:
         return decode_nal_sei_timecode(&s->timecode, gb);
+    /* Jagwire */
+    case SEI_TYPE_USER_DATA_UNREGISTERED:
+        return decode_nal_sei_user_data_unregistered(&s->user_data_unregistered,
+                                                     gb, logctx);
+    /* Jagwire - End */
     default: {
         int ret = ff_h2645_sei_message_decode(&s->common, type, AV_CODEC_ID_HEVC,
                                               gb, gbyte, logctx);
@@ -209,8 +246,10 @@ static int decode_nal_sei_message(GetByteContext *gb, void *logctx, HEVCSEI *s,
         byte          = bytestream2_get_byteu(gb);
         payload_size += byte;
     }
-    if (bytestream2_get_bytes_left(gb) < payload_size)
+    /* Jagwire */
+    if (bytestream2_get_bytes_left(gb) + 1 < payload_size)
         return AVERROR_INVALIDDATA;
+    /* Jagwire - End */
     bytestream2_init(&message_gbyte, gb->buffer, payload_size);
     ret = init_get_bits8(&message_gb, gb->buffer, payload_size);
     av_assert1(ret >= 0);

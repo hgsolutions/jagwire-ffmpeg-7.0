@@ -222,6 +222,43 @@ enum AVPacketSideDataType {
      */
     AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
 
+    /* Jagwire */
+    /**
+     * A flag to indicate synchronous SMPTE KLV. This is passed from the demuxer
+     * to the corresponding muxer.
+     */
+    AV_PKT_DATA_MPEGTS_SMPTE_KLV_SYNC,
+    /**
+     * SMPTE synchronous KLV 5-byte access unit header as defined in
+     * MISB ST1402. This is passed from the demuxer to the corresponding muxer.
+     */
+    AV_PKT_DATA_MPEGTS_SMPTE_KLV_AUHEADER,
+    
+    /**
+     * Metadata descriptor for synchronous SMPTE KLV. This is passed from
+     * the demuxer to the corresponding muxer.
+     */
+    AV_PKT_DATA_MPEGTS_METADATA_DESC,
+    
+    /**
+     * Metadata STD descriptor for synchronous SMPTE KLV. This is passed from
+     * the demuxer to the corresponding muxer.
+     */
+    AV_PKT_DATA_MPEGTS_METADATA_STD_DESC,
+
+    /**
+     * MISB standard 0604 microsecond timestamp applied to both Motion Imagery 
+     * and metadata to provide a means for correlating the events of both data 
+     * types in time.
+     */
+    AV_PKT_DATA_MISP_PRECISION_TIMESTAMP,
+    /**
+     * Custom microsecond timestamp used for synchronizing frames from a 
+     * transcoded source back to the original source.
+     */
+    AV_PKT_DATA_SYNC_PRECISION_TIMESTAMP,
+    /* Jagwire - End */
+
     /**
      * This side data should be associated with a video stream and corresponds
      * to the AVSphericalMapping structure.

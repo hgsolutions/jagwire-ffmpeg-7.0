@@ -745,7 +745,8 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
                                            "in complementary field pair "
                                            "(first field is long term)\n");
             err = AVERROR_INVALIDDATA;
-        } else {
+        /* Jagwire */
+        } else if ( h->ps.sps->ref_frame_count > 0 ) { /* Jagwire - End */
             H264Picture *pic = remove_short(h, h->cur_pic_ptr->frame_num, 0);
             if (pic) {
                 av_log(h->avctx, AV_LOG_ERROR, "illegal short term buffer state detected\n");

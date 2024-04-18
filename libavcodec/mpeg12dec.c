@@ -91,6 +91,10 @@ typedef struct Mpeg1Context {
     int first_slice;
     int extradata_decoded;
     int64_t timecode_frame_start;  /*< GOP timecode frame start number, in non drop frame format */
+    /* Jagwire - MISB standard 0604 and custom precision timestamp */
+    uint8_t misp_precision_timestamp[28];
+    uint8_t sync_precision_timestamp[28];
+    /* Jagwire - End */
 } Mpeg1Context;
 
 #define MB_TYPE_ZERO_MV   0x20000000
@@ -1357,6 +1361,33 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             s1->has_afd = 0;
         }
 
+        /* Jagwire - Add MISP microsecond timestamp to frame side data */
+        if (!strncmp(s1->misp_precision_timestamp, "MISPmicrosectime", 16))
+        {
+            AVFrameSideData *sd = av_frame_new_side_data(
+                s->current_picture_ptr->f,
+                AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP, 28);
+            if (sd)
+            {
+                memcpy(sd->data, s1->misp_precision_timestamp, 28);
+            }
+            memset(s1->misp_precision_timestamp, 0, 28);
+        }
+
+        /* Add SYNC microsecond timestamp to frame side data */
+        if (!strncmp(s1->sync_precision_timestamp, "SYNCmicrosectime", 16))
+        {
+            AVFrameSideData *sd = av_frame_new_side_data(
+                s->current_picture_ptr->f,
+                AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP, 28);
+            if (sd)
+            {
+                memcpy(sd->data, s1->sync_precision_timestamp, 28);
+            }
+            memset(s1->sync_precision_timestamp, 0, 28);
+        }
+        /* Jagwire - End */
+
         if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME))
             ff_thread_finish_setup(avctx);
     } else { // second field
@@ -1541,6 +1572,13 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
         s->dest[0] += 16 >> lowres;
         s->dest[1] +=(16 >> lowres) >> s->chroma_x_shift;
         s->dest[2] +=(16 >> lowres) >> s->chroma_x_shift;
+
+        /* Jagwire - 8 Oct 2011 */
+        /* Jagwire - 2017-05-22 - copy from ffmpeg-0.8 */
+        /* Jagwire - 23 Jan 2024 - copy from ffmpeg-4.2.2 */
+        if (((s->mv_dir & MV_DIR_FORWARD) && s->last_picture_ptr == NULL) || ((s->mv_dir & MV_DIR_BACKWARD) && s->next_picture_ptr == NULL))
+            return AVERROR_INVALIDDATA;
+        /* Jagwire - End */
 
         ff_mpv_reconstruct_mb(s, s->block);
 
@@ -2138,6 +2176,16 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
                 break;
             }
         }
+    /* Jagwire - Parse the precision microsecond timestamp */
+    }
+    else if (buf_end - p >= 28 && !strncmp(p, "MISPmicrosectime", 16))
+    {
+        memcpy(s1->misp_precision_timestamp, p, 28);
+    }
+    else if (buf_end - p >= 28 && !strncmp(p, "SYNCmicrosectime", 16))
+    {
+        memcpy(s1->sync_precision_timestamp, p, 28);
+    /* Jagwire - End */
     } else if (mpeg_decode_a53_cc(avctx, p, buf_size)) {
         return;
     }

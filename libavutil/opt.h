@@ -274,6 +274,9 @@ enum AVOptionType{
 #define AV_OPT_FLAG_AUDIO_PARAM     (1 << 3)
 #define AV_OPT_FLAG_VIDEO_PARAM     (1 << 4)
 #define AV_OPT_FLAG_SUBTITLE_PARAM  (1 << 5)
+/* Jagwire */
+#define AV_OPT_FLAG_DATA_PARAM      (1 << 6)
+/* Jagwire - End */
 /**
  * The option is intended for exporting values to the caller.
  */

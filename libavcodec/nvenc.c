@@ -2524,6 +2524,11 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
     NvencContext *ctx = avctx->priv_data;
     int sei_count = 0;
     int i, res;
+    /* Jagwire */
+    void *misp_sei_data = NULL;
+    void *sync_sei_data = NULL;
+    size_t sei_size;
+    /* Jagwire - End */
 
     if (ctx->a53_cc && av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC)) {
         void *a53_data = NULL;
@@ -2557,6 +2562,56 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
             }
         }
     }
+
+    /* Jagwire - Create unregistered SEI payload for precision timestamps */
+    if (ff_alloc_misp_precision_timestamp_sei(frame, &misp_sei_data, &sei_size) < 0)
+    {
+        av_log(ctx, AV_LOG_ERROR, "Not enough memory for MISP precision time stamp, skipping\n");
+    }
+
+    if (misp_sei_data)
+    {
+        void *tmp = av_realloc(ctx->sei_data, sizeof(NV_ENC_SEI_PAYLOAD) * (sei_count + 1));
+
+        if (!tmp)
+        {
+            res = AVERROR(ENOMEM);
+            goto error;
+        }
+        else
+        {
+            ctx->sei_data = tmp;
+            ctx->sei_data[sei_count].payloadType = SEI_TYPE_USER_DATA_UNREGISTERED;
+            ctx->sei_data[sei_count].payload = (uint8_t *)misp_sei_data;
+            ctx->sei_data[sei_count].payloadSize = (uint32_t)sei_size;
+            sei_count++;
+        }
+    }
+
+    if (ff_alloc_sync_precision_timestamp_sei(frame, &sync_sei_data, &sei_size) < 0)
+    {
+        av_log(ctx, AV_LOG_ERROR, "Not enough memory for SYNC precision time stamp, skipping\n");
+    }
+
+    if (sync_sei_data)
+    {
+        void *tmp = av_realloc(ctx->sei_data, sizeof(NV_ENC_SEI_PAYLOAD) * (sei_count + 1));
+
+        if (!tmp)
+        {
+            res = AVERROR(ENOMEM);
+            goto error;
+        }
+        else
+        {
+            ctx->sei_data = tmp;
+            ctx->sei_data[sei_count].payloadType = SEI_TYPE_USER_DATA_UNREGISTERED;
+            ctx->sei_data[sei_count].payload = (uint8_t *)sync_sei_data;
+            ctx->sei_data[sei_count].payloadSize = (uint32_t)sei_size;
+            sei_count++;
+        }
+    }
+    /* Jagwire - End */
 
     if (ctx->s12m_tc && av_frame_get_side_data(frame, AV_FRAME_DATA_S12M_TIMECODE)) {
         void *tc_data = NULL;

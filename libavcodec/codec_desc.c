@@ -3702,6 +3702,15 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("raw MPEG-TS stream"),
         .mime_types= MT("application/MP2T"),
     },
+    /* Jagwire */
+    {
+        .id        = AV_CODEC_ID_ULPFEC,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "ulpfec",
+        .long_name = NULL_IF_CONFIG_SMALL("Uneven level protection forward error correction data"),
+        .mime_types= MT("application/ulpfec"),
+    },
+    /* Jagwire - End */
     {
         .id        = AV_CODEC_ID_WRAPPED_AVFRAME,
         .type      = AVMEDIA_TYPE_VIDEO,

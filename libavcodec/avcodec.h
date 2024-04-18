@@ -2875,6 +2875,9 @@ typedef struct AVCodecParser {
                         const uint8_t *buf, int buf_size);
     void (*parser_close)(AVCodecParserContext *s);
     int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
+    /* Jagwire */
+    void (*transfer_side_data)(AVCodecParserContext *s, AVPacket *avpkt);
+    /* Jagwire - End */
 } AVCodecParser;
 
 /**

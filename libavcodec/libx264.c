@@ -115,6 +115,9 @@ typedef struct X264Context {
     int scenechange_threshold;
     int noise_reduction;
     int udu_sei;
+    /* Jagwire */
+    int precision_ts;
+    /* Jagwire - End */
 
     AVDictionary *x264_params;
 
@@ -479,6 +482,9 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
     int bit_depth, ret;
     AVFrameSideData *sd;
     AVFrameSideData *mbinfo_sd;
+    /* Jagwire */
+    int sei_payload_idx = 0;
+    /* Jagwire - End */
 
     *ppic = NULL;
     if (!frame)
@@ -545,22 +551,85 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
         if (ret < 0)
             goto fail;
 
+        /* Jagwire */
         if (sei_data) {
-            sei->payloads = av_mallocz(sizeof(sei->payloads[0]));
-            if (!sei->payloads) {
+            sei->payloads = av_realloc(sei->payloads, sizeof(sei->payloads[0]) * (sei_payload_idx + 1));
+            if (sei->payloads == NULL)
+            {
+                av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
                 av_free(sei_data);
-                ret = AVERROR(ENOMEM);
-                goto fail;
             }
+            else
+            {
+                sei->sei_free = av_free;
 
-            sei->sei_free = av_free;
+                sei->payloads[sei_payload_idx].payload_size = sei_size;
+                sei->payloads[sei_payload_idx].payload = sei_data;
+                sei->num_payloads = sei_payload_idx + 1;
+                sei->payloads[sei_payload_idx].payload_type = SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35;
+                sei_payload_idx++;
+            }
+        }
+        /* Jagwire - End */
+    }
 
-            sei->payloads[0].payload_size = sei_size;
-            sei->payloads[0].payload      = sei_data;
-            sei->payloads[0].payload_type = SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35;
-            sei->num_payloads = 1;
+    /* Jagwire */
+    if (x4->precision_ts) {
+        void *misp_sei_data;
+        void *sync_sei_data;
+        size_t sei_size;
+
+        ret = ff_alloc_misp_precision_timestamp_sei(frame, &misp_sei_data, &sei_size);
+        if (ret < 0)
+        {
+            av_log(ctx, AV_LOG_ERROR, "Not enough memory for precision time stamp, skipping\n");
+        }
+        else if (misp_sei_data)
+        {
+            sei->payloads = av_realloc(sei->payloads, sizeof(sei->payloads[0]) * (sei_payload_idx + 1));
+            if (sei->payloads == NULL)
+            {
+                av_log(ctx, AV_LOG_ERROR, "Not enough memory for precision time stamp, skipping\n");
+                av_free(misp_sei_data);
+            }
+            else
+            {
+                sei->sei_free = av_free;
+
+                sei->payloads[sei_payload_idx].payload_size = sei_size;
+                sei->payloads[sei_payload_idx].payload = misp_sei_data;
+                sei->num_payloads = sei_payload_idx + 1;
+                sei->payloads[sei_payload_idx].payload_type = 5;
+                sei_payload_idx++;
+            }
+        }
+
+        ret = ff_alloc_sync_precision_timestamp_sei(frame, &sync_sei_data, &sei_size);
+        if (ret < 0)
+        {
+            av_log(ctx, AV_LOG_ERROR, "Not enough memory for precision time stamp, skipping\n");
+        }
+        else if (sync_sei_data)
+        {
+            sei->payloads = av_realloc(sei->payloads, sizeof(sei->payloads[0]) * (sei_payload_idx + 1));
+            if (sei->payloads == NULL)
+            {
+                av_log(ctx, AV_LOG_ERROR, "Not enough memory for precision time stamp, skipping\n");
+                av_free(sync_sei_data);
+            }
+            else
+            {
+                sei->sei_free = av_free;
+
+                sei->payloads[sei_payload_idx].payload_size = sei_size;
+                sei->payloads[sei_payload_idx].payload = sync_sei_data;
+                sei->num_payloads = sei_payload_idx + 1;
+                sei->payloads[sei_payload_idx].payload_type = SEI_TYPE_USER_DATA_UNREGISTERED;
+                sei_payload_idx++;
+            }
         }
     }
+    /* Jagwire - End */
 
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
     if (sd) {
@@ -1605,6 +1674,9 @@ static const AVOption options[] = {
     { "sc_threshold", "Scene change threshold",                           OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX, VE },
     { "noise_reduction", "Noise reduction",                               OFFSET(noise_reduction), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX, VE },
     { "udu_sei",      "Use user data unregistered SEI if available",      OFFSET(udu_sei),  AV_OPT_TYPE_BOOL,   { .i64 = 0 }, 0, 1, VE },
+    /* Jagwire */
+    {"precision-ts", "Use the SYNCmicrosectime time stamp (if available)", OFFSET(precision_ts), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, VE},
+    /* Jagwire - End */
     { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_DICT, { 0 }, 0, 0, VE },
     { "mb_info",      "Set mb_info data through AVSideData, only useful when used from the API", OFFSET(mb_info), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { NULL },

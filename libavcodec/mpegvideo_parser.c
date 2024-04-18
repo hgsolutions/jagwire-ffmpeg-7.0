@@ -32,6 +32,10 @@ struct MpvParseContext {
     AVRational frame_rate;
     int progressive_sequence;
     int width, height;
+    /* Jagwire */
+    uint8_t misp_precision_timestamp[28];
+    uint8_t sync_precision_timestamp[28];
+    /* Jagwire - End */
 };
 
 /**
@@ -232,6 +236,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 }
             }
             break;
+        /* Jagwire */
+        case USER_START_CODE:
+            if (bytes_left >= 28 && !strncmp(buf, "MISPmicrosectime", 16)) {
+                memcpy(pc->misp_precision_timestamp, buf, 28);
+            } else if (bytes_left >= 28 && !strncmp(buf, "SYNCmicrosectime", 16)) {
+                memcpy(pc->sync_precision_timestamp, buf, 28);
+            }
+            break;
+        /* Jagwire - End */
         case -1:
             goto the_end;
         default:
@@ -302,6 +315,32 @@ static int mpegvideo_parse(AVCodecParserContext *s,
     *poutbuf_size = buf_size;
     return next;
 }
+
+/* Jagwire */
+static void mpegvideo_transfer_side_data(AVCodecParserContext *s, AVPacket *avpkt)
+{
+  struct MpvParseContext *pc = s->priv_data;
+
+  if (!strncmp(pc->misp_precision_timestamp, "MISPmicrosectime", 16)) {
+      uint8_t *sd = av_packet_new_side_data(avpkt,
+          AV_PKT_DATA_MISP_PRECISION_TIMESTAMP, 28);
+      if (sd) {
+        memcpy(sd, pc->misp_precision_timestamp, 28);
+      }
+      memset(pc->misp_precision_timestamp, 0, 28);
+  }
+
+  /* Add SYNC microsecond timestamp to frame side data */
+  if (!strncmp(pc->sync_precision_timestamp, "SYNCmicrosectime", 16)) {
+      uint8_t *sd = av_packet_new_side_data(avpkt,
+          AV_PKT_DATA_SYNC_PRECISION_TIMESTAMP, 28);
+      if (sd) {
+        memcpy(sd, pc->sync_precision_timestamp, 28);
+      }
+      memset(pc->sync_precision_timestamp, 0, 28);
+  }
+}
+/* Jagwire - End */
 
 static int mpegvideo_parse_init(AVCodecParserContext *s)
 {

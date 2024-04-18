@@ -2849,6 +2849,27 @@ static int set_side_data(HEVCContext *s)
         }
     }
 
+    /* Jagwire - Add MISP microsecond timestamp to frame side data */
+    if (!strncmp(s->sei.user_data_unregistered.precision_timestamp.misp_precision_timestamp, "MISPmicrosectime", 16)) {
+        AVFrameSideData *sd = av_frame_new_side_data(out,
+            AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP, 28);
+        if (sd) {
+          memcpy(sd->data, s->sei.user_data_unregistered.precision_timestamp.misp_precision_timestamp, 28);
+        }
+        memset(s->sei.user_data_unregistered.precision_timestamp.misp_precision_timestamp, 0, 28);
+    }
+
+    /* Add SYNC microsecond timestamp to frame side data */
+    if (!strncmp(s->sei.user_data_unregistered.precision_timestamp.sync_precision_timestamp, "SYNCmicrosectime", 16)) {
+        AVFrameSideData *sd = av_frame_new_side_data(out,
+            AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP, 28);
+        if (sd) {
+          memcpy(sd->data, s->sei.user_data_unregistered.precision_timestamp.sync_precision_timestamp, 28);
+        }
+        memset(s->sei.user_data_unregistered.precision_timestamp.sync_precision_timestamp, 0, 28);
+    }
+    /* Jagwire - End */
+
     return 0;
 }
 

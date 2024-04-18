@@ -1241,7 +1241,10 @@ OBJS-$(CONFIG_HAPQA_EXTRACT_BSF)          += hap.o
 OBJS-$(CONFIG_HEVC_METADATA_BSF)          += h265_profile_level.o h2645data.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += av1_parse.o
 OBJS-$(CONFIG_TRUEHD_CORE_BSF)            += mlp_parse.o mlp.o
-
+# Jagwire
+OBJS-$(CONFIG_KLV_0601TOMMS_BSF)          += klv_0601tomms_bsf.o
+OBJS-$(CONFIG_KLV_0601REMOVEKEYS_BSF)     += klv_0601removekeys_bsf.o
+# Jagwire - End
 # thread libraries
 OBJS-$(HAVE_LIBC_MSVCRT)               += file_open.o
 OBJS-$(HAVE_THREADS)                   += pthread.o pthread_slice.o pthread_frame.o

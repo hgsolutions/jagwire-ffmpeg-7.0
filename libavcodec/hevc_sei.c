@@ -170,10 +170,10 @@ static int decode_nal_sei_user_data_unregistered(HEVCSEIUserDataUnregistered *s,
     user_data[i] = 0;
 
     if (!strncmp(user_data, "MISPmicrosectime", 16)) {
-        memcpy(s->precision_timestamp.misp_precision_timestamp, user_data, 28);
+        memcpy(s->misp_precision_timestamp, user_data, 28);
     }
     else if (!strncmp(user_data, "SYNCmicrosectime", 16)) {
-        memcpy(s->precision_timestamp.sync_precision_timestamp, user_data, 28);
+        memcpy(s->sync_precision_timestamp, user_data, 28);
     }
 
     av_free(user_data);

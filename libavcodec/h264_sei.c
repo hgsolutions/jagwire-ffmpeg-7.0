@@ -60,6 +60,13 @@ void ff_h264_sei_uninit(H264SEIContext *h)
     h->common.afd.present                 =  0;
 
     ff_h2645_sei_reset(&h->common);
+
+    /* Jagwire */
+    memset(h->user_data_unregistered.misp_precision_timestamp,
+        0, 28);
+    memset(h->user_data_unregistered.sync_precision_timestamp,
+        0, 28);
+    /* Jagwire - End */
 }
 
 int ff_h264_sei_process_picture_timing(H264SEIPictureTiming *h, const SPS *sps,
@@ -229,7 +236,7 @@ static int decode_green_metadata(H264SEIGreenMetaData *h, GetByteContext *gb)
 }
 
 /* Jagwire */
-static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *gb,
+static int decode_unregistered_user_data(H264SEIUserDataUnregistered *h, GetBitContext *gb,
                                          void *logctx, int size)
 {
     uint8_t *user_data;
@@ -325,7 +332,7 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
             break;
         /* Jagwire */
         case SEI_TYPE_USER_DATA_UNREGISTERED:
-            ret = decode_unregistered_user_data(&h->unregistered, gb, logctx, size);
+            ret = decode_unregistered_user_data(&h->user_data_unregistered, gb, logctx, size);
             break;
         /* Jagwire - End */
         default:

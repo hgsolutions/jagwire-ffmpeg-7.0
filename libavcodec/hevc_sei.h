@@ -79,13 +79,9 @@ typedef struct HEVCSEITimeCode {
 } HEVCSEITimeCode;
 
 /* Jagwire */
-typedef struct HEVCSEIPrecisionTimestamp {
+typedef struct HEVCSEIUserDataUnregistered {
     uint8_t misp_precision_timestamp[28];
     uint8_t sync_precision_timestamp[28];
-} HEVCSEIPrecisionTimestamp;
-
-typedef struct HEVCSEIUserDataUnregistered {
-    HEVCSEIPrecisionTimestamp precision_timestamp;
 } HEVCSEIUserDataUnregistered;
 /* Jagwire - End */
 
@@ -122,9 +118,9 @@ static inline void ff_hevc_reset_sei(HEVCSEI *sei)
     ff_h2645_sei_reset(&sei->common);
 
     /* Jagwire */
-    memset(sei->user_data_unregistered.precision_timestamp.misp_precision_timestamp,
+    memset(sei->user_data_unregistered.misp_precision_timestamp,
         0, 28);
-    memset(sei->user_data_unregistered.precision_timestamp.sync_precision_timestamp,
+    memset(sei->user_data_unregistered.sync_precision_timestamp,
         0, 28);
     /* Jagwire - End */
 }

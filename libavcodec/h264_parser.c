@@ -666,23 +666,23 @@ static void h264_transfer_side_data(AVCodecParserContext *s, AVPacket *avpkt)
   H264ParseContext *p = s->priv_data;
   uint8_t *sd = NULL;
 
-  if (!strncmp(p->sei.unregistered.misp_precision_timestamp, "MISPmicrosectime", 16)) {
+  if (!strncmp(p->sei.user_data_unregistered.misp_precision_timestamp, "MISPmicrosectime", 16)) {
       sd = av_packet_new_side_data(avpkt,
           AV_PKT_DATA_MISP_PRECISION_TIMESTAMP, 28);
       if (sd) {
-        memcpy(sd, p->sei.unregistered.misp_precision_timestamp, 28);
+        memcpy(sd, p->sei.user_data_unregistered.misp_precision_timestamp, 28);
       }
-      memset(p->sei.unregistered.misp_precision_timestamp, 0, 28);
+      memset(p->sei.user_data_unregistered.misp_precision_timestamp, 0, 28);
   }
 
   /* Add SYNC microsecond timestamp to frame side data */
-  if (!strncmp(p->sei.unregistered.sync_precision_timestamp, "SYNCmicrosectime", 16)) {
+  if (!strncmp(p->sei.user_data_unregistered.sync_precision_timestamp, "SYNCmicrosectime", 16)) {
       uint8_t *sd = av_packet_new_side_data(avpkt,
           AV_PKT_DATA_SYNC_PRECISION_TIMESTAMP, 28);
       if (sd) {
-        memcpy(sd, p->sei.unregistered.sync_precision_timestamp, 28);
+        memcpy(sd, p->sei.user_data_unregistered.sync_precision_timestamp, 28);
       }
-      memset(p->sei.unregistered.sync_precision_timestamp, 0, 28);
+      memset(p->sei.user_data_unregistered.sync_precision_timestamp, 0, 28);
   }
 }
 /* Jagwire - End */
@@ -714,4 +714,7 @@ const AVCodecParser ff_h264_parser = {
     .parser_init    = init,
     .parser_parse   = h264_parse,
     .parser_close   = h264_close,
+    /* Jagwire */
+    .transfer_side_data = h264_transfer_side_data
+    /* Jagwire - End */
 };

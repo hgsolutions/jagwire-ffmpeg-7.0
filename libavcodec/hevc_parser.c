@@ -340,6 +340,33 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     return next;
 }
 
+/* Jagwire - Add microsecond timestamp to AVPacket side data */
+static void hevc_transfer_side_data(AVCodecParserContext *s, AVPacket *avpkt)
+{
+  HEVCParserContext *p = s->priv_data;
+  uint8_t *sd = NULL;
+
+  if (!strncmp(p->sei.user_data_unregistered.misp_precision_timestamp, "MISPmicrosectime", 16)) {
+      sd = av_packet_new_side_data(avpkt,
+          AV_PKT_DATA_MISP_PRECISION_TIMESTAMP, 28);
+      if (sd) {
+        memcpy(sd, p->sei.user_data_unregistered.misp_precision_timestamp, 28);
+      }
+      memset(p->sei.user_data_unregistered.misp_precision_timestamp, 0, 28);
+  }
+
+  /* Add SYNC microsecond timestamp to frame side data */
+  if (!strncmp(p->sei.user_data_unregistered.sync_precision_timestamp, "SYNCmicrosectime", 16)) {
+      uint8_t *sd = av_packet_new_side_data(avpkt,
+          AV_PKT_DATA_SYNC_PRECISION_TIMESTAMP, 28);
+      if (sd) {
+        memcpy(sd, p->sei.user_data_unregistered.sync_precision_timestamp, 28);
+      }
+      memset(p->sei.user_data_unregistered.sync_precision_timestamp, 0, 28);
+  }
+}
+/* Jagwire - End */
+
 static void hevc_parser_close(AVCodecParserContext *s)
 {
     HEVCParserContext *ctx = s->priv_data;
@@ -356,4 +383,7 @@ const AVCodecParser ff_hevc_parser = {
     .priv_data_size = sizeof(HEVCParserContext),
     .parser_parse   = hevc_parse,
     .parser_close   = hevc_parser_close,
+    /* Jagwire */
+    .transfer_side_data = hevc_transfer_side_data
+    /* Jagwire - End */
 };

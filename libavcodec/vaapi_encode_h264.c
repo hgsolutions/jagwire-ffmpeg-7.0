@@ -110,9 +110,7 @@ typedef struct VAAPIEncodeH264Context {
 
     /* Jagwire */
     SEIRawUserDataUnregistered     sei_misp_timestamp;
-    uint8_t                       *sei_misp_timestamp_data;
     SEIRawUserDataUnregistered     sei_sync_timestamp;
-    uint8_t                       *sei_sync_timestamp_data;
     /* Jagwire - End */
 
     int aud_needed;
@@ -280,8 +278,10 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
                 AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP);
 
             if(sd) {
+                priv->sei_misp_timestamp.data = av_malloc(12);
                 memcpy(priv->sei_misp_timestamp.uuid_iso_iec_11578, sd->data, 16);
-                memcpy(priv->sei_misp_timestamp.data, sd->data, 28);
+                memcpy(priv->sei_misp_timestamp.data, sd->data+16, 12);
+                priv->sei_misp_timestamp.data_length = 12;
 
                 err = ff_cbs_sei_add_message(priv->cbc, au, 1,
                                             SEI_TYPE_USER_DATA_UNREGISTERED,
@@ -295,8 +295,10 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
                 AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP);
 
             if(sd) {
+                priv->sei_sync_timestamp.data = av_malloc(12);
                 memcpy(priv->sei_sync_timestamp.uuid_iso_iec_11578, sd->data, 16);
-                memcpy(priv->sei_sync_timestamp.data, sd->data, 28);
+                memcpy(priv->sei_sync_timestamp.data, sd->data+16, 12);
+                priv->sei_sync_timestamp.data_length = 12;
 
                 err = ff_cbs_sei_add_message(priv->cbc, au, 1,
                                             SEI_TYPE_USER_DATA_UNREGISTERED,

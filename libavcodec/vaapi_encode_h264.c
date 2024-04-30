@@ -109,10 +109,10 @@ typedef struct VAAPIEncodeH264Context {
     void                          *sei_a53cc_data;
 
     /* Jagwire */
-    H264RawSEIUserDataUnregistered sei_misp_timestamp;
-    uint8_t                       *sei_misp_timestamp_data;
-    H264RawSEIUserDataUnregistered sei_sync_timestamp;
-    uint8_t                       *sei_sync_timestamp_data;
+    SEIRawUserDataUnregistered sei_misp_timestamp;
+    uint8_t                    *sei_misp_timestamp_data;
+    SEIRawUserDataUnregistered sei_sync_timestamp;
+    uint8_t                    *sei_sync_timestamp_data;
     /* Jagwire - End */
 
     int aud_needed;

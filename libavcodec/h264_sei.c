@@ -236,26 +236,20 @@ static int decode_green_metadata(H264SEIGreenMetaData *h, GetByteContext *gb)
 }
 
 /* Jagwire */
-static int decode_unregistered_user_data(H264SEIUserDataUnregistered *h, GetBitContext *gb,
+static int decode_unregistered_user_data(H264SEIUserDataUnregistered *h, GetByteContext *gb,
                                          void *logctx, int size)
 {
     uint8_t *user_data;
-    int e, build, i;
 
     if (size < 16 || size >= INT_MAX - 16)
         return AVERROR_INVALIDDATA;
 
-    user_data = av_malloc(16 + size + 1);
+    user_data = av_malloc(size);
     if (!user_data)
         return AVERROR(ENOMEM);
 
-    skip_bits(gb, 8);
-    skip_bits(gb, 8);
-
-    for (i = 0; i < size + 16; i++)
-        user_data[i] = get_bits(gb, 8);
-
-    user_data[i] = 0;
+    for (int i = 0; i < size; i++)
+        user_data[i] = bytestream2_get_byte(gb);
 
     /* Jagwire - Added support for precision time stamp decode */
     if (!strncmp(user_data, "MISPmicrosectime", 16)) {
@@ -263,14 +257,8 @@ static int decode_unregistered_user_data(H264SEIUserDataUnregistered *h, GetBitC
     }
     else if (!strncmp(user_data, "SYNCmicrosectime", 16)) {
         memcpy(h->sync_precision_timestamp, user_data, 28);
-    } /* Jagwire - End */
-    else {
-        e = sscanf(user_data + 16, "x264 - core %d", &build);
-        if (e == 1 && build > 0)
-            h->x264_build = build;
-        if (e == 1 && build == 1 && !strncmp(user_data+16, "x264 - core 0000", 16))
-            h->x264_build = 67;
     }
+    /* Jagwire - End */
 
     av_free(user_data);
     return 0;
@@ -332,7 +320,7 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
             break;
         /* Jagwire */
         case SEI_TYPE_USER_DATA_UNREGISTERED:
-            ret = decode_unregistered_user_data(&h->user_data_unregistered, gb, logctx, size);
+            ret = decode_unregistered_user_data(&h->user_data_unregistered, &gbyte_payload, logctx, size);
             break;
         /* Jagwire - End */
         default:

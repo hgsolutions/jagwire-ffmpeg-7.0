@@ -109,8 +109,10 @@ typedef struct VAAPIEncodeH264Context {
     void                          *sei_a53cc_data;
 
     /* Jagwire */
-    SEIRawUserDataUnregistered     sei_misp_timestamp;
-    SEIRawUserDataUnregistered     sei_sync_timestamp;
+    SEIRawUserDataUnregistered sei_misp_timestamp;
+    uint8_t                    *sei_misp_timestamp_data;
+    SEIRawUserDataUnregistered sei_sync_timestamp;
+    uint8_t                    *sei_sync_timestamp_data;
     /* Jagwire - End */
 
     int aud_needed;
@@ -234,9 +236,7 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
             priv->aud_needed = 0;
         }
 
-        /* Jagwire */
-        if (priv->sei_needed & SEI_IDENTIFIER || priv->sei_needed & SEI_MISP_TIMESTAMP || priv->sei_needed & SEI_SYNC_TIMESTAMP) {
-        /* Jagwire - End */
+        if (priv->sei_needed & SEI_IDENTIFIER) {
             err = ff_cbs_sei_add_message(priv->cbc, au, 1,
                                          SEI_TYPE_USER_DATA_UNREGISTERED,
                                          &priv->sei_identifier, NULL);
@@ -274,38 +274,18 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
 
         /* Jagwire */
         if (priv->sei_needed & SEI_MISP_TIMESTAMP) {
-            AVFrameSideData *sd = av_frame_get_side_data(pic->input_image,
-                AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP);
-
-            if(sd) {
-                priv->sei_misp_timestamp.data = av_malloc(12);
-                memcpy(priv->sei_misp_timestamp.uuid_iso_iec_11578, sd->data, 16);
-                memcpy(priv->sei_misp_timestamp.data, sd->data+16, 12);
-                priv->sei_misp_timestamp.data_length = 12;
-
-                err = ff_cbs_sei_add_message(priv->cbc, au, 1,
-                                            SEI_TYPE_USER_DATA_UNREGISTERED,
-                                            &priv->sei_misp_timestamp, NULL);
-                if (err < 0)
-                    goto fail;
-            }
+            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                        SEI_TYPE_USER_DATA_UNREGISTERED,
+                                        &priv->sei_misp_timestamp, NULL);
+            if (err < 0)
+                goto fail;
         }
         if (priv->sei_needed & SEI_SYNC_TIMESTAMP) {
-            AVFrameSideData *sd = av_frame_get_side_data(pic->input_image,
-                AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP);
-
-            if(sd) {
-                priv->sei_sync_timestamp.data = av_malloc(12);
-                memcpy(priv->sei_sync_timestamp.uuid_iso_iec_11578, sd->data, 16);
-                memcpy(priv->sei_sync_timestamp.data, sd->data+16, 12);
-                priv->sei_sync_timestamp.data_length = 12;
-
-                err = ff_cbs_sei_add_message(priv->cbc, au, 1,
-                                            SEI_TYPE_USER_DATA_UNREGISTERED,
-                                            &priv->sei_sync_timestamp, NULL);
-                if (err < 0)
-                    goto fail;
-            }
+            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                        SEI_TYPE_USER_DATA_UNREGISTERED,
+                                        &priv->sei_sync_timestamp, NULL);
+            if (err < 0)
+                goto fail;
         }
         /* Jagwire - End */
 
@@ -776,12 +756,14 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     sd = av_frame_get_side_data(pic->input_image,
         AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP);
     if (sd) {
-      priv->sei_needed |= SEI_MISP_TIMESTAMP;
+        memcpy(priv->sei_misp_timestamp.data, sd->data + 16, 12);
+        priv->sei_needed |= SEI_MISP_TIMESTAMP;
     }
 
     sd = av_frame_get_side_data(pic->input_image,
         AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP);
     if (sd) {
+      memcpy(priv->sei_sync_timestamp.data, sd->data + 16, 12);
       priv->sei_needed |= SEI_SYNC_TIMESTAMP;
     }
     /* Jagwire - End */
@@ -1216,6 +1198,24 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
         }
     }
 
+    /* Jagwire */
+    priv->sei_misp_timestamp_data = av_malloc(12);
+    if (!priv->sei_misp_timestamp_data) {
+      return AVERROR(ENOMEM);
+    }
+    strncpy(priv->sei_misp_timestamp.uuid_iso_iec_11578, "MISPmicrosectime", 16);
+    priv->sei_misp_timestamp.data = priv->sei_misp_timestamp_data;
+    priv->sei_misp_timestamp.data_length = 12;
+
+    priv->sei_sync_timestamp_data = av_malloc(12);
+    if (!priv->sei_sync_timestamp_data) {
+      return AVERROR(ENOMEM);
+    }
+    strncpy(priv->sei_sync_timestamp.uuid_iso_iec_11578, "SYNCmicrosectime", 16);
+    priv->sei_sync_timestamp.data = priv->sei_sync_timestamp_data;
+    priv->sei_sync_timestamp.data_length = 12;
+    /* Jagwire - End */
+
     ctx->roi_quant_range = 51 + 6 * (ctx->profile->depth - 8);
 
     return 0;
@@ -1334,6 +1334,10 @@ static av_cold int vaapi_encode_h264_close(AVCodecContext *avctx)
     ff_cbs_close(&priv->cbc);
     av_freep(&priv->sei_identifier_string);
     av_freep(&priv->sei_a53cc_data);
+    /* Jagwire */
+    av_freep(&priv->sei_misp_timestamp_data);
+    av_freep(&priv->sei_sync_timestamp_data);
+    /* Jagwire - End */
 
     return ff_vaapi_encode_close(avctx);
 }

@@ -2449,11 +2449,13 @@ const FFOutputFormat ff_mpegts_muxer = {
     .write_trailer  = mpegts_write_end,
     .deinit         = mpegts_deinit,
     .check_bitstream = mpegts_check_bitstream,
+/* Jagwire - Add AVFMT_TS_NONSTRICT flag */
 #if FF_API_ALLOW_FLUSH
-    .p.flags        = AVFMT_ALLOW_FLUSH | AVFMT_VARIABLE_FPS | AVFMT_NODIMENSIONS,
+    .p.flags        = AVFMT_ALLOW_FLUSH | AVFMT_VARIABLE_FPS | AVFMT_NODIMENSIONS | AVFMT_TS_NONSTRICT,
 #else
-    .p.flags         = AVFMT_VARIABLE_FPS | AVFMT_NODIMENSIONS,
+    .p.flags         = AVFMT_VARIABLE_FPS | AVFMT_NODIMENSIONS | AVFMT_TS_NONSTRICT,
 #endif
+/* Jagwire - End */
     .flags_internal  = FF_OFMT_FLAG_ALLOW_FLUSH,
     .p.priv_class   = &mpegts_muxer_class,
 };

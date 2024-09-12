@@ -154,6 +154,17 @@ static inline int decode_vui_parameters(GetBitContext *gb, void *logctx,
             sps->time_scale = time_scale;
         }
         sps->fixed_frame_rate_flag = get_bits1(gb);
+        /* Jagwire - 11 Oct 2011
+         * Jagwire - 2017-05-22 - copy from ffmpeg-0.8
+         * Set a reasonable value if calculated frame rate
+         * is obviously wacked
+         */
+        /* Jagwire - 23 Jan 2024 - copy from ffmpeg-4.2.2 */
+        if( (sps->time_scale/sps->num_units_in_tick) > 240 ) {
+            sps->time_scale = 180000;
+            sps->num_units_in_tick = 3003;
+        }
+        /* Jagwire - End */
     }
 
     sps->nal_hrd_parameters_present_flag = get_bits1(gb);

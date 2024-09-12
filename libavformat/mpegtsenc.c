@@ -812,6 +812,23 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             break;
         case AVMEDIA_TYPE_DATA:
             if (codec_id == AV_CODEC_ID_SMPTE_KLV) {
+                /* Jagwire */
+                const AVPacketSideData *sd = av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data, AV_PKT_DATA_MPEGTS_METADATA_DESC);
+                if (sd) {
+                    *q++ = METADATA_DESCRIPTOR;
+                    *q++ = sd->size;
+                    memcpy(q, sd->data, sd->size);
+                    q += sd->size;
+                }
+
+                sd = av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data, AV_PKT_DATA_MPEGTS_METADATA_STD_DESC);
+                if (sd) {
+                    *q++ = METADATA_STD_DESCRIPTOR;
+                    *q++ = sd->size;
+                    memcpy(q, sd->data, sd->size);
+                    q += sd->size;
+                }
+                /* Jagwire - End */
                 put_registration_descriptor(&q, MKTAG('K', 'L', 'V', 'A'));
             } else if (codec_id == AV_CODEC_ID_SMPTE_2038) {
                 put_registration_descriptor(&q, MKTAG('V', 'A', 'N', 'C'));
@@ -2189,6 +2206,25 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             ts_st->dvb_ac3_desc = dvb_ac3_desc;
         }
         av_free(hdr);
+    /* Jagwire */
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_SMPTE_KLV) {
+        uint8_t *au_header;
+        size_t side_data_size;
+        
+        au_header = av_packet_get_side_data(pkt,
+            AV_PKT_DATA_MPEGTS_SMPTE_KLV_AUHEADER, &side_data_size);
+        
+        if (au_header) {
+            /* Add the 5-byte metadata access unit header to the start of the payload */
+            data = av_malloc(pkt->size + side_data_size);
+            if (!data)
+                return AVERROR(ENOMEM);
+            memcpy(data, au_header, side_data_size);
+            memcpy(data + side_data_size, pkt->data, pkt->size);
+            buf = data;
+            size = pkt->size + side_data_size;
+        }
+    /* Jagwire - End */
     } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_BLURAY && ts->m2ts_mode) {
         mpegts_write_pes(s, st, buf, size, pts, dts,
                          pkt->flags & AV_PKT_FLAG_KEY, stream_id);
@@ -2411,11 +2447,13 @@ const FFOutputFormat ff_mpegts_muxer = {
     .write_trailer  = mpegts_write_end,
     .deinit         = mpegts_deinit,
     .check_bitstream = mpegts_check_bitstream,
+/* Jagwire - Add AVFMT_TS_NONSTRICT flag */
 #if FF_API_ALLOW_FLUSH
-    .p.flags        = AVFMT_ALLOW_FLUSH | AVFMT_VARIABLE_FPS | AVFMT_NODIMENSIONS,
+    .p.flags        = AVFMT_ALLOW_FLUSH | AVFMT_VARIABLE_FPS | AVFMT_NODIMENSIONS | AVFMT_TS_NONSTRICT,
 #else
-    .p.flags         = AVFMT_VARIABLE_FPS | AVFMT_NODIMENSIONS,
+    .p.flags         = AVFMT_VARIABLE_FPS | AVFMT_NODIMENSIONS | AVFMT_TS_NONSTRICT,
 #endif
+/* Jagwire - End */
     .flags_internal  = FF_OFMT_FLAG_ALLOW_FLUSH,
     .p.priv_class   = &mpegts_muxer_class,
 };

@@ -1205,6 +1205,12 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
                 goto fail;
         }
 
+        /* Jagwire - Add parser specific side data that needs to be carried forward downstream */
+        if (sti->parser->parser->transfer_side_data) {
+          sti->parser->parser->transfer_side_data(sti->parser, pkt);
+        }
+        /* Jagwire - End */
+
         if (pkt->side_data) {
             out_pkt->side_data       = pkt->side_data;
             out_pkt->side_data_elems = pkt->side_data_elems;

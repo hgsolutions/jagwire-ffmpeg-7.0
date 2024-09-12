@@ -43,6 +43,10 @@ enum {
     SEI_MASTERING_DISPLAY       = 0x08,
     SEI_CONTENT_LIGHT_LEVEL     = 0x10,
     SEI_A53_CC                  = 0x20,
+    /* Jagwire */
+    SEI_MISP_TIMESTAMP          = 0x40,
+    SEI_SYNC_TIMESTAMP          = 0x80,
+    /* Jagwire - End */
 };
 
 typedef struct VAAPIEncodeH265Picture {
@@ -89,6 +93,11 @@ typedef struct VAAPIEncodeH265Context {
     SEIRawContentLightLevelInfo        sei_content_light_level;
     SEIRawUserDataRegistered           sei_a53cc;
     void                              *sei_a53cc_data;
+
+    /* Jagwire */
+    SEIRawUserDataUnregistered     sei_misp_timestamp;
+    SEIRawUserDataUnregistered     sei_sync_timestamp;
+    /* Jagwire - End */
 
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment current_access_unit;
@@ -238,6 +247,43 @@ static int vaapi_encode_h265_write_extra_header(AVCodecContext *avctx,
             if (err < 0)
                 goto fail;
         }
+
+        /* Jagwire */
+        if (priv->sei_needed & SEI_MISP_TIMESTAMP) {
+            AVFrameSideData *sd = av_frame_get_side_data(pic->input_image,
+                AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP);
+
+            if(sd) {
+                priv->sei_misp_timestamp.data = av_malloc(12);
+                memcpy(priv->sei_misp_timestamp.uuid_iso_iec_11578, sd->data, 16);
+                memcpy(priv->sei_misp_timestamp.data, sd->data+16, 12);
+                priv->sei_misp_timestamp.data_length = 12;
+
+                err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                            SEI_TYPE_USER_DATA_UNREGISTERED,
+                                            &priv->sei_misp_timestamp, NULL);
+                if (err < 0)
+                    goto fail;
+            }
+        }
+        if (priv->sei_needed & SEI_SYNC_TIMESTAMP) {
+            AVFrameSideData *sd = av_frame_get_side_data(pic->input_image,
+                AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP);
+
+            if(sd) {
+                priv->sei_sync_timestamp.data = av_malloc(12);
+                memcpy(priv->sei_sync_timestamp.uuid_iso_iec_11578, sd->data, 16);
+                memcpy(priv->sei_sync_timestamp.data, sd->data+16, 12);
+                priv->sei_sync_timestamp.data_length = 12;
+
+                err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                            SEI_TYPE_USER_DATA_UNREGISTERED,
+                                            &priv->sei_sync_timestamp, NULL);
+                if (err < 0)
+                    goto fail;
+            }
+        }
+        /* Jagwire - End */
 
         priv->sei_needed = 0;
 
@@ -767,6 +813,9 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
     VAAPIEncodeH265Picture         *hprev = prev ? prev->codec_priv : NULL;
     VAEncPictureParameterBufferHEVC *vpic = vaapi_pic->codec_picture_params;
     int i, j = 0;
+    /* Jagwire */
+    AVFrameSideData *sd = NULL;
+    /* Jagwire - End */
 
     if (pic->type == FF_HW_PICTURE_TYPE_IDR) {
         av_assert0(pic->display_order == pic->encode_order);
@@ -910,6 +959,20 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
             priv->sei_needed |= SEI_A53_CC;
         }
     }
+
+    /* Jagwire */
+    sd = av_frame_get_side_data(pic->input_image,
+        AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP);
+    if (sd) {
+      priv->sei_needed |= SEI_MISP_TIMESTAMP;
+    }
+
+    sd = av_frame_get_side_data(pic->input_image,
+        AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP);
+    if (sd) {
+      priv->sei_needed |= SEI_SYNC_TIMESTAMP;
+    }
+    /* Jagwire - End */
 
     vpic->decoded_curr_pic = (VAPictureHEVC) {
         .picture_id    = vaapi_pic->recon_surface,

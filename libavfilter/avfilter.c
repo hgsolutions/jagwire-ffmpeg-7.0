@@ -665,6 +665,10 @@ static const AVOption avfilter_options[] = {
         {"auto", "autodetect a suitable number of threads to use", 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, .flags = FLAGS, .unit = "threads"},
     { "extra_hw_frames", "Number of extra hardware frames to allocate for the user",
         OFFSET(extra_hw_frames), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
+    /* Jagwire */
+    { "extra_hw_frames", "Number of extra hardware frames to allocate for the user",
+        OFFSET(extra_hw_frames), AV_OPT_TYPE_INT, { .i64 = 8 }, -1, INT_MAX, FLAGS },
+    /* Jagwire - End */
     { NULL },
 };
 

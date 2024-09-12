@@ -574,7 +574,8 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
         pkt->dts = sti->pts_buffer[0];
     }
 
-    if (sti->cur_dts && sti->cur_dts != AV_NOPTS_VALUE &&
+    /* Jagwire */
+    /* if (sti->cur_dts && sti->cur_dts != AV_NOPTS_VALUE &&
         ((!(s->oformat->flags & AVFMT_TS_NONSTRICT) &&
           st->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE &&
           st->codecpar->codec_type != AVMEDIA_TYPE_DATA &&
@@ -583,7 +584,8 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
                "Application provided invalid, non monotonically increasing dts to muxer in stream %d: %s >= %s\n",
                st->index, av_ts2str(sti->cur_dts), av_ts2str(pkt->dts));
         return AVERROR(EINVAL);
-    }
+    } */
+    /* Jagwire - End */
     if (pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts < pkt->dts) {
         av_log(s, AV_LOG_ERROR,
                "pts (%s) < dts (%s) in stream %d\n",

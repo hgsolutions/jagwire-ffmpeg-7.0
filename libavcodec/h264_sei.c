@@ -60,6 +60,13 @@ void ff_h264_sei_uninit(H264SEIContext *h)
     h->common.afd.present                 =  0;
 
     ff_h2645_sei_reset(&h->common);
+
+    /* Jagwire */
+    memset(h->user_data_unregistered.misp_precision_timestamp,
+        0, 28);
+    memset(h->user_data_unregistered.sync_precision_timestamp,
+        0, 28);
+    /* Jagwire - End */
 }
 
 int ff_h264_sei_process_picture_timing(H264SEIPictureTiming *h, const SPS *sps,
@@ -228,6 +235,36 @@ static int decode_green_metadata(H264SEIGreenMetaData *h, GetByteContext *gb)
     return 0;
 }
 
+/* Jagwire */
+static int decode_unregistered_user_data(H264SEIUserDataUnregistered *h, GetByteContext *gb,
+                                         void *logctx, int size)
+{
+    uint8_t *user_data;
+
+    if (size < 16 || size >= INT_MAX - 16)
+        return AVERROR_INVALIDDATA;
+
+    user_data = av_malloc(size);
+    if (!user_data)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < size; i++)
+        user_data[i] = bytestream2_get_byte(gb);
+
+    /* Jagwire - Added support for precision time stamp decode */
+    if (!strncmp(user_data, "MISPmicrosectime", 16)) {
+        memcpy(h->misp_precision_timestamp, user_data, 28);
+    }
+    else if (!strncmp(user_data, "SYNCmicrosectime", 16)) {
+        memcpy(h->sync_precision_timestamp, user_data, 28);
+    }
+    /* Jagwire - End */
+
+    av_free(user_data);
+    return 0;
+}
+/* Jagwire - End */
+
 int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
                        const H264ParamSets *ps, void *logctx)
 {
@@ -281,6 +318,11 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
         case SEI_TYPE_GREEN_METADATA:
             ret = decode_green_metadata(&h->green_metadata, &gbyte_payload);
             break;
+        /* Jagwire */
+        case SEI_TYPE_USER_DATA_UNREGISTERED:
+            ret = decode_unregistered_user_data(&h->user_data_unregistered, &gbyte_payload, logctx, size);
+            break;
+        /* Jagwire - End */
         default:
             ret = ff_h2645_sei_message_decode(&h->common, type, AV_CODEC_ID_H264,
                                               &gb_payload, &gbyte_payload, logctx);

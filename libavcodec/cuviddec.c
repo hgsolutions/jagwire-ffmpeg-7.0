@@ -412,6 +412,28 @@ static int CUDAAPI cuvid_handle_picture_display(void *opaque, CUVIDPARSERDISPINF
     return 1;
 }
 
+/* Jagwire */
+static void cuvid_parse_frame_side_data(AVCodecContext *avctx, AVFrame *frame, AVPacket *avpkt)
+{
+  for (int i = 0; i < avpkt->side_data_elems; i++) {
+    AVFrameSideData *sd = NULL;
+
+    if (avpkt->side_data[i].type == AV_PKT_DATA_MISP_PRECISION_TIMESTAMP) {
+      sd = av_frame_new_side_data(frame, AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP,
+          avpkt->side_data[i].size);
+    }
+    else if (avpkt->side_data[i].type == AV_PKT_DATA_SYNC_PRECISION_TIMESTAMP) {
+      sd = av_frame_new_side_data(frame, AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP,
+          avpkt->side_data[i].size);
+    }
+
+    if (sd) {
+      memcpy(sd->data, avpkt->side_data[i].data, avpkt->side_data[i].size);
+    }
+  }
+}
+/* Jagwire - End */
+
 static int cuvid_is_buffer_full(AVCodecContext *avctx)
 {
     CuvidContext *ctx = avctx->priv_data;
@@ -511,6 +533,9 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
         ret = ff_decode_get_packet(avctx, pkt);
         if (ret < 0 && ret != AVERROR_EOF)
             return ret;
+        /* Jagwire */
+        cuvid_parse_frame_side_data(avctx, frame, pkt);
+        /* Jagwire - End */
         ret = cuvid_decode_packet(avctx, pkt);
         av_packet_unref(pkt);
         // cuvid_is_buffer_full() should avoid this.

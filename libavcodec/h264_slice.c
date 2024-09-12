@@ -1277,6 +1277,27 @@ static int h264_export_frame_props(H264Context *h)
         h->sei.picture_timing.timecode_cnt = 0;
     }
 
+    /* Jagwire - Add MISP microsecond timestamp to frame side data */
+    if (!strncmp(h->sei.user_data_unregistered.misp_precision_timestamp, "MISPmicrosectime", 16)) {
+        AVFrameSideData *sd = av_frame_new_side_data(cur->f,
+            AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP, 28);
+        if (sd) {
+          memcpy(sd->data, h->sei.user_data_unregistered.misp_precision_timestamp, 28);
+        }
+        memset(h->sei.user_data_unregistered.misp_precision_timestamp, 0, 28);
+    }
+
+    /* Add SYNC microsecond timestamp to frame side data */
+    if (!strncmp(h->sei.user_data_unregistered.sync_precision_timestamp, "SYNCmicrosectime", 16)) {
+        AVFrameSideData *sd = av_frame_new_side_data(cur->f,
+            AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP, 28);
+        if (sd) {
+          memcpy(sd->data, h->sei.user_data_unregistered.sync_precision_timestamp, 28);
+        }
+        memset(h->sei.user_data_unregistered.sync_precision_timestamp, 0, 28);
+    }
+    /* Jagwire - End */
+
     return 0;
 }
 

@@ -107,6 +107,10 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
         flags= AV_OPT_FLAG_VIDEO_PARAM;
     else if(s->codec_type == AVMEDIA_TYPE_SUBTITLE)
         flags= AV_OPT_FLAG_SUBTITLE_PARAM;
+    /* Jagwire */
+    else if(s->codec_type == AVMEDIA_TYPE_DATA)
+        flags= AV_OPT_FLAG_DATA_PARAM;
+    /* Jagwire - End */
     av_opt_set_defaults2(s, flags, flags);
 
     av_channel_layout_uninit(&s->ch_layout);

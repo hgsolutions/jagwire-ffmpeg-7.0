@@ -44,6 +44,10 @@ enum {
     SEI_IDENTIFIER     = 0x02,
     SEI_RECOVERY_POINT = 0x04,
     SEI_A53_CC         = 0x08,
+    /* Jagwire */
+    SEI_MISP_TIMESTAMP = 0x10,
+    SEI_SYNC_TIMESTAMP = 0x20,
+    /* Jagwire - End */
 };
 
 // Random (version 4) ISO 11578 UUID.
@@ -100,6 +104,13 @@ typedef struct VAAPIEncodeH264Context {
     char                          *sei_identifier_string;
     SEIRawUserDataRegistered       sei_a53cc;
     void                          *sei_a53cc_data;
+
+    /* Jagwire */
+    SEIRawUserDataUnregistered sei_misp_timestamp;
+    uint8_t                    *sei_misp_timestamp_data;
+    SEIRawUserDataUnregistered sei_sync_timestamp;
+    uint8_t                    *sei_sync_timestamp_data;
+    /* Jagwire - End */
 
     int aud_needed;
     int sei_needed;
@@ -257,6 +268,22 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
             if (err < 0)
                 goto fail;
         }
+        /* Jagwire */
+        if (priv->sei_needed & SEI_MISP_TIMESTAMP) {
+            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                        SEI_TYPE_USER_DATA_UNREGISTERED,
+                                        &priv->sei_misp_timestamp, NULL);
+            if (err < 0)
+                goto fail;
+        }
+        if (priv->sei_needed & SEI_SYNC_TIMESTAMP) {
+            err = ff_cbs_sei_add_message(priv->cbc, au, 1,
+                                        SEI_TYPE_USER_DATA_UNREGISTERED,
+                                        &priv->sei_sync_timestamp, NULL);
+            if (err < 0)
+                goto fail;
+        }
+        /* Jagwire - End */
 
         priv->sei_needed = 0;
 
@@ -413,6 +440,9 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     VAAPIEncodeH264Picture         *hprev = prev ? prev->codec_priv : NULL;
     VAEncPictureParameterBufferH264 *vpic = vaapi_pic->codec_picture_params;
     int i, j = 0;
+    /* Jagwire */
+    AVFrameSideData *sd = NULL;
+    /* Jagwire - End */
 
     if (pic->type == FF_HW_PICTURE_TYPE_IDR) {
         av_assert0(pic->display_order == pic->encode_order);
@@ -505,6 +535,22 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
             priv->sei_needed |= SEI_A53_CC;
         }
     }
+
+    /* Jagwire */
+    sd = av_frame_get_side_data(pic->input_image,
+        AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP);
+    if (sd) {
+        memcpy(priv->sei_misp_timestamp.data, sd->data + 16, 12);
+        priv->sei_needed |= SEI_MISP_TIMESTAMP;
+    }
+
+    sd = av_frame_get_side_data(pic->input_image,
+        AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP);
+    if (sd) {
+      memcpy(priv->sei_sync_timestamp.data, sd->data + 16, 12);
+      priv->sei_needed |= SEI_SYNC_TIMESTAMP;
+    }
+    /* Jagwire - End */
 
     vpic->CurrPic = (VAPictureH264) {
         .picture_id          = vaapi_pic->recon_surface,
@@ -937,6 +983,24 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
         }
     }
 
+    /* Jagwire */
+    priv->sei_misp_timestamp_data = av_malloc(12);
+    if (!priv->sei_misp_timestamp_data) {
+      return AVERROR(ENOMEM);
+    }
+    strncpy(priv->sei_misp_timestamp.uuid_iso_iec_11578, "MISPmicrosectime", 16);
+    priv->sei_misp_timestamp.data = priv->sei_misp_timestamp_data;
+    priv->sei_misp_timestamp.data_length = 12;
+
+    priv->sei_sync_timestamp_data = av_malloc(12);
+    if (!priv->sei_sync_timestamp_data) {
+      return AVERROR(ENOMEM);
+    }
+    strncpy(priv->sei_sync_timestamp.uuid_iso_iec_11578, "SYNCmicrosectime", 16);
+    priv->sei_sync_timestamp.data = priv->sei_sync_timestamp_data;
+    priv->sei_sync_timestamp.data_length = 12;
+    /* Jagwire - End */
+
     ctx->roi_quant_range = 51 + 6 * (ctx->profile->depth - 8);
 
     return 0;
@@ -1056,6 +1120,10 @@ static av_cold int vaapi_encode_h264_close(AVCodecContext *avctx)
     ff_cbs_close(&priv->cbc);
     av_freep(&priv->sei_identifier_string);
     av_freep(&priv->sei_a53cc_data);
+    /* Jagwire */
+    av_freep(&priv->sei_misp_timestamp_data);
+    av_freep(&priv->sei_sync_timestamp_data);
+    /* Jagwire - End */
 
     return ff_vaapi_encode_close(avctx);
 }

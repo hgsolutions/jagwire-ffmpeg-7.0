@@ -250,7 +250,7 @@ static int vaapi_encode_h265_write_extra_header(AVCodecContext *avctx,
 
         /* Jagwire */
         if (priv->sei_needed & SEI_MISP_TIMESTAMP) {
-            AVFrameSideData *sd = av_frame_get_side_data(pic->input_image,
+            AVFrameSideData *sd = av_frame_get_side_data(base->input_image,
                 AV_FRAME_DATA_MISP_PRECISION_TIMESTAMP);
 
             if(sd) {
@@ -267,7 +267,7 @@ static int vaapi_encode_h265_write_extra_header(AVCodecContext *avctx,
             }
         }
         if (priv->sei_needed & SEI_SYNC_TIMESTAMP) {
-            AVFrameSideData *sd = av_frame_get_side_data(pic->input_image,
+            AVFrameSideData *sd = av_frame_get_side_data(base->input_image,
                 AV_FRAME_DATA_SYNC_PRECISION_TIMESTAMP);
 
             if(sd) {

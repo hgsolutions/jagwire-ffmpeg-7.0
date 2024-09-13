@@ -172,8 +172,6 @@ typedef struct HEVCVPS {
     int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
 
-    HEVCHdrParams *hdr;
-
     uint8_t *data;
     int data_size;
     /* Put this at the end of the structure to make it easier to calculate the

@@ -354,4 +354,7 @@ const AVCodecParser ff_mpegvideo_parser = {
     .parser_init    = mpegvideo_parse_init,
     .parser_parse   = mpegvideo_parse,
     .parser_close   = ff_parse_close,
+    /* Jagwire */
+    .transfer_side_data = mpegvideo_transfer_side_data
+    /* Jagwire - End */
 };

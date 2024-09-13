@@ -440,8 +440,8 @@ static void add_level(VLC_MULTI_ELEM *table, const int is16bit,
             code = curcode + (buf[t].code >> curlen);
             newlimit = curlimit - l;
             l  += curlen;
-            if (is16bit) info.val16[curlevel] = sym;
-            else info.val8[curlevel] = sym&0xFF;
+	    if (is16bit) AV_WN16(info.val+2*curlevel, sym);
+            else info.val[curlevel] = sym&0xFF;
 
             if (curlevel) { // let's not add single entries
                 uint32_t val = code >> (32 - numbits);

@@ -477,13 +477,14 @@ static int slices_realloc(VVCFrameContext *fc)
     return 0;
 }
 
-static void ep_init_cabac_decoder(SliceContext *sc, const int index,
+static int ep_init_cabac_decoder(SliceContext *sc, const int index,
     const H2645NAL *nal, GetBitContext *gb, const CodedBitstreamUnit *unit)
 {
     const H266RawSlice *slice     = unit->content_ref;
     const H266RawSliceHeader *rsh = sc->sh.r;
     EntryPoint *ep                = sc->eps + index;
     int size;
+    int ret;
 
     if (index < rsh->num_entry_points) {
         int skipped = 0;
@@ -501,9 +502,11 @@ static void ep_init_cabac_decoder(SliceContext *sc, const int index,
     } else {
         size = get_bits_left(gb) / 8;
     }
-    av_assert0(gb->buffer + get_bits_count(gb) / 8 + size <= gb->buffer_end);
-    ff_init_cabac_decoder (&ep->cc, gb->buffer + get_bits_count(gb) / 8, size);
+    ret = ff_init_cabac_decoder (&ep->cc, gb->buffer + get_bits_count(gb) / 8, size);
+    if (ret < 0)
+        return ret;
     skip_bits(gb, size * 8);
+    return 0;
 }
 
 static int slice_init_entry_points(SliceContext *sc,
@@ -514,6 +517,7 @@ static int slice_init_entry_points(SliceContext *sc,
     int nb_eps                = sh->r->num_entry_points + 1;
     int ctu_addr              = 0;
     GetBitContext gb;
+    int ret;
 
     if (sc->nb_eps != nb_eps) {
         eps_free(sc);
@@ -523,7 +527,9 @@ static int slice_init_entry_points(SliceContext *sc,
         sc->nb_eps = nb_eps;
     }
 
-    init_get_bits8(&gb, slice->data, slice->data_size);
+    ret = init_get_bits8(&gb, slice->data, slice->data_size);
+    if (ret < 0)
+        return ret;
     for (int i = 0; i < sc->nb_eps; i++)
     {
         EntryPoint *ep = sc->eps + i;
@@ -536,7 +542,9 @@ static int slice_init_entry_points(SliceContext *sc,
             fc->tab.slice_idx[rs] = sc->slice_idx;
         }
 
-        ep_init_cabac_decoder(sc, i, nal, &gb, unit);
+        ret = ep_init_cabac_decoder(sc, i, nal, &gb, unit);
+        if (ret < 0)
+            return ret;
 
         if (i + 1 < sc->nb_eps)
             ctu_addr = sh->entry_point_start_ctu[i];
@@ -785,6 +793,12 @@ static int decode_nal_unit(VVCContext *s, VVCFrameContext *fc, const H2645NAL *n
 
     s->temporal_id = nal->temporal_id;
 
+    if (nal->nuh_layer_id > 0) {
+        avpriv_report_missing_feature(fc->log_ctx,
+                "Decoding of multilayer bitstreams");
+        return AVERROR_PATCHWELCOME;
+    }
+
     switch (unit->type) {
     case VVC_VPS_NUT:
     case VVC_SPS_NUT:
@@ -819,7 +833,6 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
     const CodedBitstreamH266Context *h266 = s->cbc->priv_data;
     CodedBitstreamFragment *frame         = &s->current_frame;
     int ret = 0;
-    int eos_at_start = 1;
     s->last_eos = s->eos;
     s->eos = 0;
 
@@ -835,10 +848,7 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
         const CodedBitstreamUnit *unit = frame->units + i;
 
         if (unit->type == VVC_EOB_NUT || unit->type == VVC_EOS_NUT) {
-            if (eos_at_start)
-                s->last_eos = 1;
-            else
-                s->eos = 1;
+            s->last_eos = 1;
         } else {
             ret = decode_nal_unit(s, fc, nal, unit);
             if (ret < 0) {

@@ -451,6 +451,15 @@ static void hevc_vps_free(FFRefStructOpaque opaque, void *obj)
     av_freep(&vps->data);
 }
 
+static int compare_vps(const HEVCVPS *vps1, const HEVCVPS *vps2)
+{
+    if (!memcmp(vps1, vps2, offsetof(HEVCVPS, hdr)))
+        return !vps1->vps_num_hrd_parameters ||
+               !memcmp(vps1->hdr, vps2->hdr, vps1->vps_num_hrd_parameters * sizeof(*vps1->hdr));
+
+    return 0;
+}
+
 int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
                            HEVCParamSets *ps)
 {
@@ -576,8 +585,13 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
             goto err;
     }
 
-    remove_vps(ps, vps_id);
-    ps->vps_list[vps_id] = vps;
+    if (ps->vps_list[vps_id] &&
+        compare_vps(ps->vps_list[vps_id], vps)) {
+        ff_refstruct_unref(&vps);
+    } else {
+        remove_vps(ps, vps_id);
+        ps->vps_list[vps_id] = vps;
+    }
 
     return 0;
 

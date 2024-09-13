@@ -495,7 +495,7 @@ static int qsv_new_mfx_loader(AVCodecContext *avctx,
     mfxStatus sts;
     mfxLoader loader = NULL;
     mfxConfig cfg;
-    mfxVariant impl_value;
+    mfxVariant impl_value = {0};
 
     loader = MFXLoad();
     if (!loader) {

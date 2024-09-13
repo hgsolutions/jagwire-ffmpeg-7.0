@@ -500,9 +500,9 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
         table[j].len = single->table[j].len;
         table[j].num = single->table[j].len > 0 ? 1 : 0;
         if (is16bit)
-            table[j].val16[0] = single->table[j].sym;
+            AV_WN16(table[j].val, single->table[j].sym);
         else
-            table[j].val8[0]  = single->table[j].sym;
+            table[j].val[0] = single->table[j].sym;
     }
 
     add_level(table, is16bit, nb_codes, numbits, buf,
@@ -529,7 +529,7 @@ int ff_vlc_init_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int 
 
     multi->table = av_malloc(sizeof(*multi->table) << nb_bits);
     if (!multi->table)
-        return AVERROR(ENOMEM);
+        goto fail;
 
     j = code = 0;
     for (int i = 0; i < nb_codes; i++, lens += lens_wrap) {

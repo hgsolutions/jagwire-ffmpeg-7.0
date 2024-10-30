@@ -129,6 +129,10 @@ typedef struct OptionsContext {
     int seek_timestamp;
     const char *format;
 
+    /* Jagwire */
+    const char *sdp_filename;
+    /* Jagwire - End */
+
     SpecifierOptList codec_names;
     SpecifierOptList audio_ch_layouts;
     SpecifierOptList audio_channels;

@@ -88,6 +88,9 @@ static int is_supported(enum AVCodecID id)
     case AV_CODEC_ID_OPUS:
     case AV_CODEC_ID_RAWVIDEO:
     case AV_CODEC_ID_BITPACKED:
+    /* Jagwire */
+    case AV_CODEC_ID_SMPTE_KLV:
+    /* Jagwire - End */
         return 1;
     default:
         return 0;
@@ -274,6 +277,10 @@ static int rtp_write_header(AVFormatContext *s1)
     case AV_CODEC_ID_AAC:
         s->max_frames_per_packet = 50;
         break;
+    /* Jagwire */
+    case AV_CODEC_ID_SMPTE_KLV:
+        break;
+    /* Jagwire - End */
     default:
         break;
     }
@@ -639,7 +646,10 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
                    size, s->max_payload_size);
             return AVERROR(EINVAL);
         }
-        /* Intentional fallthrough */
+    /* Intentional fallthrough */
+    /* Jagwire */
+    case AV_CODEC_ID_SMPTE_KLV:
+    /* Jagwire - End */
     default:
         /* better than nothing : send the codec raw data */
         rtp_send_raw(s1, pkt->data, size);

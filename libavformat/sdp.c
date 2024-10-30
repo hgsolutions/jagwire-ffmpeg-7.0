@@ -804,6 +804,11 @@ static int sdp_write_media_attributes(char *buff, int size, const AVStream *st,
                                      payload_type);
         }
         break;
+    /* Jagwire */
+    case AV_CODEC_ID_SMPTE_KLV:
+        av_strlcatf(buff, size, "a=rtpmap:%d smpte336m/90000\r\n", payload_type);
+        break;
+    /* Jagwire - End */
     default:
         /* Nothing special to do here... */
         break;

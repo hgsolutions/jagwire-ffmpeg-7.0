@@ -80,6 +80,33 @@ static const AVClass tee_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+/* Jagwire */
+AVFormatContext ** avformat_get_tee_rtp_slaves(AVFormatContext *avf,
+                                               unsigned int *count)
+{
+    if (!strcmp(avf->oformat->name, "tee"))
+    {
+        unsigned i, j = 0;
+        TeeContext *tee = avf->priv_data;
+        AVFormatContext **slaves = av_malloc_array(tee->nb_slaves, sizeof(*slaves));
+
+        for (i = 0; i < tee->nb_slaves; i++)
+        {
+            if (!strcmp(tee->slaves[i].avf->oformat->name, "rtp"))
+            {
+                slaves[j++] = tee->slaves[i].avf;
+            }
+        }
+
+        *count = j;
+        return slaves;
+    }
+
+    *count = 0;
+    return NULL;
+}
+/* Jagwire - End */
+
 static inline int parse_slave_failure_policy_option(const char *opt, TeeSlave *tee_slave)
 {
     if (!opt) {

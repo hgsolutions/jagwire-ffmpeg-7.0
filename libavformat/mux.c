@@ -976,7 +976,9 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
         const AVStream *const st  = s->streams[i];
         const FFStream *const sti = cffstream(st);
         const AVCodecParameters *const par = st->codecpar;
-        if (sti->last_in_packet_buffer) {
+        /* Jagwire - Fix to prevent FFMPEG from waiting on low temporal metadata */
+        if (sti->last_in_packet_buffer ||
+            par->codec_id != AV_CODEC_ID_SMPTE_KLV) {
             ++stream_count;
         } else if (par->codec_type != AVMEDIA_TYPE_ATTACHMENT &&
                    par->codec_id != AV_CODEC_ID_VP8 &&
@@ -1063,7 +1065,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
     }
 #endif
 
-    if (stream_count && flush) {
+    if (stream_count && flush /* Jagwire */ && si->packet_buffer.head /* Jagwire - End */) {
         PacketListEntry *pktl = si->packet_buffer.head;
         AVStream *const st = s->streams[pktl->pkt.stream_index];
         FFStream *const sti = ffstream(st);

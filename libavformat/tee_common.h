@@ -23,8 +23,16 @@
 #define AVFORMAT_TEE_COMMON_H
 
 #include "libavutil/dict.h"
+/* Jagwire */
+#include "avformat.h"
+/* Jagwire - End */
 
 int ff_tee_parse_slave_options(void *log, char *slave,
                                AVDictionary **options, char **filename);
+
+/* Jagwire */
+AVFormatContext ** avformat_get_tee_rtp_slaves(AVFormatContext *avf,
+                                               unsigned int *count);
+/* Jagwire - End */
 
 #endif

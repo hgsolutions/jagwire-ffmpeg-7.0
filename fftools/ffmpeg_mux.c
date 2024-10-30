@@ -38,6 +38,10 @@
 #include "libavformat/avformat.h"
 #include "libavformat/avio.h"
 
+/* Jagwire */
+#include "libavformat/tee_common.h"
+/* Jagwire - End */
+
 typedef struct MuxThreadContext {
     AVPacket *pkt;
     AVPacket *fix_sub_duration_pkt;
@@ -503,6 +507,40 @@ static int of_streamcopy(OutputFile *of, OutputStream *ost, AVPacket *pkt)
     return 0;
 }
 
+/* Jagwire */
+static void append_output_file_sdp_context(AVFormatContext **avc,
+    int *avc_size, int *avc_index, int output_file_index)
+{
+    int slave_idx, slave_count;
+    Muxer *mux = mux_from_of(output_files[output_file_index]);
+
+    if (!strcmp(mux->fc->oformat->name, "rtp")) {
+        avc[*avc_index] = mux->fc;
+        *avc_index += 1;
+    }
+    else if (!strcmp(mux->fc->oformat->name, "tee")) {
+        AVFormatContext **rtp_slaves = avformat_get_tee_rtp_slaves(
+            mux->fc, &slave_count);
+        if (slave_count > 0)
+        {
+            if ((slave_count + *avc_index) > *avc_size) {
+                avc = av_realloc_array(avc, slave_count + *avc_index, sizeof(*avc));
+                if (!avc)
+                    exit(1);
+                *avc_size = slave_count + *avc_index;
+            }
+            for (slave_idx = 0; slave_idx < slave_count; slave_idx++)
+            {
+                avc[*avc_index] = rtp_slaves[slave_idx];
+                *avc_index += 1;
+            }
+
+            av_freep(&rtp_slaves);
+        }
+    }
+}
+/* Jagwire - End */
+
 int print_sdp(const char *filename);
 
 int print_sdp(const char *filename)
@@ -511,6 +549,10 @@ int print_sdp(const char *filename)
     int j = 0, ret;
     AVIOContext *sdp_pb;
     AVFormatContext **avc;
+    /* Jagwire */
+    int i = 0;
+    int output_file_count = nb_output_files;
+    /* Jagwire - End */
 
     avc = av_malloc_array(nb_output_files, sizeof(*avc));
     if (!avc)
@@ -523,6 +565,22 @@ int print_sdp(const char *filename)
             j++;
         }
     }
+
+    /* Jagwire */
+    for (int i = 0; i < nb_output_files; i++) {
+        Muxer *mux = mux_from_of(output_files[i]);
+
+        if (!strcmp(mux->fc->oformat->name, "rtp")) {
+            avc[j] = mux->fc;
+            j++;
+        }
+    }
+
+    j = 0;
+    for (; i < nb_output_files; i++) {
+        append_output_file_sdp_context(avc, &output_file_count, &j, i);
+    }
+    /* Jagwire - End */
 
     if (!j) {
         av_log(NULL, AV_LOG_ERROR, "No output streams in the SDP.\n");
@@ -571,6 +629,22 @@ int mux_check_init(void *arg)
 
     av_dump_format(fc, of->index, fc->url, 1);
     atomic_fetch_add(&nb_output_dumped, 1);
+
+    /* Jagwire */
+    if (!strcmp(fc->oformat->name, "tee")) {
+        // Check tee slaves for RTP outputs
+        int slave_count;
+        AVFormatContext **rtp_slaves = avformat_get_tee_rtp_slaves(fc,
+            &slave_count);
+        if (slave_count > 0) {
+            AVDictionaryEntry *av_dict_entry = av_dict_get(mux->opts, "sdp_file",
+                NULL, 0);
+            av_freep(&rtp_slaves);
+            if (av_dict_entry)
+                print_sdp(av_dict_entry->value);
+        }
+    }
+    /* Jagwire - End */
 
     return 0;
 }

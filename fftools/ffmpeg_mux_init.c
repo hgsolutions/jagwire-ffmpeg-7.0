@@ -3053,6 +3053,16 @@ int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     mux->limit_filesize    = o->limit_filesize;
     av_dict_copy(&mux->opts, o->g->format_opts, 0);
 
+    /* Jagwire */
+    if (o->sdp_filename) {
+        if (av_dict_set(&mux->opts, "sdp_file", o->sdp_filename, 0) < 0) {
+            av_log(NULL, AV_LOG_WARNING,
+                   "%s=%s entry could not be added to output file options\n",
+                   "sdp_file", o->sdp_filename);
+        }
+    }
+    /* Jagwire - End */
+
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 

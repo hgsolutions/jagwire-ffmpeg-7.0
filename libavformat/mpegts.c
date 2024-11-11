@@ -1298,6 +1298,19 @@ skip:
                     pes->dts = ff_parse_pes_pts(r);
                     r += 5;
                 }
+
+                /* Jagwire */
+                if (pes->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+                    ts->last_video_pts = pes->pts;
+                    ts->last_video_dts = pes->dts;
+                }
+                else if (pes->st->codecpar->codec_id == AV_CODEC_ID_SMPTE_KLV &&
+                    pes->stream_type == 0x06 ){
+                    pes->pts = ts->last_video_pts;
+                    pes->dts = ts->last_video_dts;
+                }
+                /* Jagwire - End */
+
                 pes->extended_stream_id = -1;
                 if (flags & 0x01) { /* PES extension */
                     pes_ext = *r++;

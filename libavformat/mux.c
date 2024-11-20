@@ -976,9 +976,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
         const AVStream *const st  = s->streams[i];
         const FFStream *const sti = cffstream(st);
         const AVCodecParameters *const par = st->codecpar;
-        /* Jagwire - Fix to prevent FFMPEG from waiting on low temporal metadata */
-        if (sti->last_in_packet_buffer ||
-            par->codec_id != AV_CODEC_ID_SMPTE_KLV) {
+        if (sti->last_in_packet_buffer) {
             ++stream_count;
         } else if (par->codec_type != AVMEDIA_TYPE_ATTACHMENT &&
                    par->codec_id != AV_CODEC_ID_VP8 &&

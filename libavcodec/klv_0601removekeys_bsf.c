@@ -428,6 +428,10 @@ static int klv_0601removekeys_filter(AVBSFContext *ctx, AVPacket *out)
         return 0;
     }
 
+    in->data = in->data + data_offset-16;
+    in->size = in->size - data_offset+16;
+    data_offset = 16;
+
     if (s->frame_rate >= 1.0f && s->st0601_last_sent) {
         uint64_t sent_delta;
         sent_delta = in->dts - s->st0601_last_sent;

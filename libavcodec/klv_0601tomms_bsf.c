@@ -546,6 +546,10 @@ static int klv_0601tomms_filter(AVBSFContext *ctx, AVPacket *out)
         av_log(s, AV_LOG_DEBUG, "MISB ST 0601 local set key not found\n");
         goto fail;
     }
+
+    in->data = in->data + data_offset-16;
+    in->size = in->size - data_offset+16;
+    data_offset = 16;
     
     // Decode MISB ST 0601 length
     ret = klv_decode_ber_length(in, &data_offset, &local_set_length);
